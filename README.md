@@ -1,114 +1,268 @@
-# 🎤 AI Voice Assistant - Desktop
+# Lumo AI Language Tutor
 
-A native desktop voice conversation app built with Tkinter, PyAudio, OpenAI Whisper, GPT-4o-mini, and ElevenLabs TTS.
+A sophisticated desktop AI language tutor application built with Python and Tkinter, featuring voice interaction, intelligent conversation, and personalized learning.
 
-## Features
+## 🚀 Features
 
-- 🎤 **Direct microphone access** via PyAudio (no browser needed)
-- 🗣️ **Live transcription** using OpenAI Whisper API
-- 🤖 **AI responses** from GPT-4o-mini
-- 🔊 **Automatic audio playback** using system default player
-- ⚡ **Low latency** processing with 3-second audio chunks
-- 🖥️ **Native desktop GUI** - clean and responsive
+- **Voice-First Interaction**: Real-time speech-to-text and text-to-speech
+- **Intelligent Conversations**: Powered by OpenAI GPT-4o-mini with context awareness
+- **Personalized Learning**: Adaptive difficulty and personalized curriculum
+- **Modern Dark UI**: Beautiful, responsive interface inspired by modern design systems
+- **Session Management**: Track learning progress and session history
+- **Vocabulary Management**: Spaced repetition system for vocabulary retention
+- **Local-First Architecture**: All data stored locally with optional cloud sync
 
-## Quick Start
+## 🏗️ Architecture
 
-### 1. Install Dependencies
+The application follows a modular, enterprise-grade architecture:
 
-```bash
-pip install -r requirements.txt
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   UI Layer      │◄──►│ Orchestration   │◄──►│   Data Layer    │
+│                 │    │     Layer       │    │                 │
+│ • Dashboard     │    │ • Agent Core    │    │ • SQLite DB     │
+│ • Conversation  │    │ • LangChain     │    │ • User Profile  │
+│ • Components    │    │ • Action Parser │    │ • Learning Data │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                    ┌─────────────────┐
+                    │  Audio Layer    │
+                    │                 │
+                    │ • Voice Loop    │
+                    │ • STT/TTS       │
+                    │ • Audio Utils   │
+                    └─────────────────┘
 ```
 
-### 2. Set Up API Keys
+## 📋 Requirements
 
-Create a `.env` file in the project root with your API keys:
+- Python 3.8+
+- Windows 10/11 (primary), macOS, or Linux
+- Microphone and speakers
+- OpenAI API key
+- ElevenLabs API key
+
+## 🛠️ Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd desktop_ai_tutor
+   ```
+
+2. **Create a virtual environment**:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Set up environment variables**:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your API keys
+   ```
+
+5. **Run the application**:
+   ```bash
+   python main.py
+   ```
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Create a `.env` file in the project root with the following variables:
 
 ```bash
-# .env file
+# Required API Keys
 OPENAI_API_KEY=your-openai-api-key-here
 ELEVENLABS_API_KEY=your-elevenlabs-api-key-here
+
+# Audio Configuration
+AUDIO_SAMPLE_RATE=16000
+AUDIO_SILENCE_THRESHOLD=1.5
+AUDIO_DEBUG=true
+
+# UI Configuration
+UI_THEME=dark
+UI_WINDOW_WIDTH=1200
+UI_WINDOW_HEIGHT=800
+
+# Agent Configuration
+AGENT_MODEL=gpt-4o-mini
+AGENT_MAX_TOKENS=150
+AGENT_TEMPERATURE=0.7
+
+# Learning Configuration
+LEARNING_SRS_ENABLED=true
+LEARNING_MAX_VOCAB=750
 ```
 
-**Get API Keys:**
-- [OpenAI API Key](https://platform.openai.com/api-keys)
-- [ElevenLabs API Key](https://elevenlabs.io/speech-synthesis)
+### API Keys Setup
 
-### 3. Run the App
+1. **OpenAI API Key**: Get from [OpenAI Platform](https://platform.openai.com/api-keys)
+2. **ElevenLabs API Key**: Get from [ElevenLabs](https://elevenlabs.io/)
+
+## 🎯 Usage
+
+### Getting Started
+
+1. **Launch the application**: Run `python main.py`
+2. **Dashboard**: View your learning statistics and progress
+3. **Start Conversation**: Click "Start Conversation" to begin a session
+4. **Voice Interaction**: Click "Start Recording" and speak naturally
+5. **End Session**: Click "End Session" when finished
+
+### Features
+
+- **Dashboard**: Overview of learning progress and statistics
+- **Conversation Mode**: Natural voice-based language learning
+- **Session Management**: Automatic tracking of learning sessions
+- **Vocabulary Tracking**: Automatic detection and tracking of new words
+- **Progress Analytics**: Detailed learning analytics and insights
+
+## 🏗️ Project Structure
+
+```
+desktop_ai_tutor/
+├── main.py                          # Application entry point
+├── config.py                        # Configuration management
+├── requirements.txt                 # Python dependencies
+├── .env.example                     # Environment variables template
+├── README.md                        # This file
+├── 
+├── core/                            # Core application logic
+│   ├── application.py               # Main app controller
+│   ├── session_manager.py           # Session lifecycle management
+│   └── event_bus.py                 # Internal event system
+│
+├── ui/                              # User interface components
+│   ├── theme.py                     # Dark theme & styling system
+│   ├── dashboard.py                 # Stats & metrics dashboard
+│   ├── conversation.py              # Main conversation interface
+│   └── components/                  # Reusable UI components
+│
+├── audio/                           # Audio processing
+│   ├── voice_loop.py                # Core audio capture/playback
+│   ├── stt_service.py               # Speech-to-text service
+│   └── tts_service.py               # Text-to-speech service
+│
+├── agent/                           # AI agent components
+│   ├── orchestrator.py              # Main agent orchestration
+│   ├── langchain_config.py          # LangChain setup
+│   └── tools/                       # Agent tools
+│
+├── data/                            # Data layer
+│   ├── database.py                  # SQLite connection & queries
+│   ├── models.py                    # Data models & schemas
+│   ├── migrations.py                # Database schema management
+│   └── analytics.py                 # Learning analytics
+│
+├── learning/                        # Learning algorithms
+│   ├── srs_engine.py                # Spaced repetition system
+│   ├── difficulty_adapter.py        # Dynamic difficulty adjustment
+│   └── curriculum_builder.py        # Personalized curriculum
+│
+├── utils/                           # Utility modules
+│   ├── logger.py                    # Centralized logging
+│   ├── validators.py                # Input validation
+│   └── performance.py               # Performance monitoring
+│
+└── assets/                          # Static assets
+    ├── icons/                       # UI icons
+    ├── fonts/                       # Custom fonts
+    └── sounds/                      # UI sound effects
+```
+
+## 🔍 Development
+
+### Running Tests
 
 ```bash
-python desktop_app.py
+pytest tests/
 ```
 
-### 4. Use the App
+### Code Quality
 
-1. Click **"Start Recording"** to begin
-2. Speak clearly for 3 seconds
-3. Wait for AI response and transcription
-4. Audio plays automatically
-5. Repeat as needed
-
-## How It Works
-
-1. **Audio Capture**: PyAudio captures microphone audio directly
-2. **Processing**: Audio is processed in 3-second chunks
-3. **Transcription**: Whisper API converts speech to text
-4. **AI Response**: GPT-4o-mini generates conversational responses
-5. **TTS**: ElevenLabs converts AI responses to speech
-6. **Playback**: Audio plays using system default player
-
-## Technical Details
-
-- **Native Audio**: Direct microphone access via PyAudio
-- **Threading**: Background processing prevents GUI freezing
-- **Error Handling**: Robust error handling for all components
-- **Cross-platform**: Works on Windows, macOS, and Linux
-
-## Troubleshooting
-
-### PyAudio Installation Issues
-
-**Windows:**
 ```bash
-pip install pipwin
-pipwin install pyaudio
+# Format code
+black .
+
+# Lint code
+flake8 .
+
+# Type checking
+mypy .
 ```
 
-**macOS:**
+### Database Management
+
 ```bash
-brew install portaudio
-pip install pyaudio
+# Run migrations
+python -m data.migrations
+
+# Create sample data
+python -m data.migrations --sample-data
 ```
 
-**Linux (Ubuntu/Debian):**
-```bash
-sudo apt-get install portaudio19-dev python3-pyaudio
-pip install pyaudio
-```
+## 🐛 Troubleshooting
 
 ### Common Issues
 
-1. **Microphone not working**: Check system microphone permissions
-2. **API errors**: Verify your API keys are correct and have sufficient credits
-3. **Audio playback issues**: Ensure system has a default audio player
-4. **No speech detected**: Speak clearly and ensure microphone is working
+1. **Audio not working**:
+   - Check microphone permissions
+   - Verify PyAudio installation
+   - Test with system audio settings
 
-## Requirements
+2. **API errors**:
+   - Verify API keys in `.env` file
+   - Check internet connection
+   - Ensure API quotas are not exceeded
 
-- Python 3.8+
-- Microphone access
-- OpenAI API key with Whisper access
-- ElevenLabs API key
-- Stable internet connection
+3. **Database errors**:
+   - Run database migrations: `python -m data.migrations`
+   - Check file permissions for database directory
 
-## Advantages Over Web Version
+### Logs
 
-- ✅ **No browser dependencies**
-- ✅ **No WebRTC issues**
-- ✅ **Reliable audio playback**
-- ✅ **No threading warnings**
-- ✅ **Better performance**
-- ✅ **Native desktop experience**
+Application logs are stored in:
+- `logs/tutor.log` - General application logs
+- `logs/errors.log` - Error logs
+- `logs/tutor_structured.log` - Structured JSON logs
 
-## License
+## 🤝 Contributing
 
-MIT License - feel free to modify and distribute!
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🙏 Acknowledgments
+
+- OpenAI for GPT-4o-mini
+- ElevenLabs for text-to-speech
+- The Python and Tkinter communities
+- All contributors and testers
+
+## 📞 Support
+
+For support and questions:
+- Create an issue on GitHub
+- Check the troubleshooting section
+- Review the logs for error details
+
+---
+
+**Built with ❤️ for language learners everywhere**

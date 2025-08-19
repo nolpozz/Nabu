@@ -1,4 +1,4 @@
-# Desktop AI Voice Assistant Dependencies
+# Core Dependencies
 openai>=1.0.0
 requests>=2.31.0
 numpy>=1.24.0
@@ -6,6 +6,45 @@ PyAudio>=0.2.11
 python-dotenv>=1.0.0
 pygame>=2.0.0
 
-# Optional: For better audio processing
-scipy>=1.10.0
+# LangChain and AI/ML
+langchain>=0.1.0
+langchain-openai>=0.0.5
+langchain-community>=0.0.10
+pydantic>=2.0.0
+
+# Database and Data Processing
+sqlite3  # Built-in with Python
+pandas>=2.0.0
+sqlalchemy>=2.0.0
+
+# UI and Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.15.0
+
+# Audio Processing
 librosa>=0.10.0
+scipy>=1.10.0
+soundfile>=0.12.0
+
+# Utilities
+asyncio  # Built-in with Python
+aiofiles>=23.0.0
+python-dateutil>=2.8.0
+cryptography>=41.0.0
+
+# Development and Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# Performance and Monitoring
+psutil>=5.9.0
+memory-profiler>=0.61.0
+
+# Optional: For advanced features
+# sentence-transformers>=2.2.0  # For semantic similarity
+# transformers>=4.30.0  # For local NLP models
+# torch>=2.0.0  # For PyTorch-based features
