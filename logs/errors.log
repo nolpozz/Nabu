@@ -2321,3 +2321,495 @@ Message: Failed to end session: maximum recursion depth exceeded while calling a
 Exception: None
 ---
 
+2025-08-23 17:45:14,831 - core.event_bus - ERROR - event_bus:publish:69
+Message: Error in event callback for user_message: main thread is not in main loop
+Exception: (<class 'RuntimeError'>, RuntimeError('main thread is not in main loop'), <traceback object at 0x000002B271B0C340>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\event_bus.py", line 67, in publish
+    callback(data)
+  File "C:\Users\nolan\personal\personal-projects\Nabu\ui\conversation.py", line 263, in _on_user_message
+    self._add_message("User", text, "user")
+  File "C:\Users\nolan\personal\personal-projects\Nabu\ui\conversation.py", line 224, in _add_message
+    self.conversation_text.insert(tk.END, formatted_message)
+  File "C:\Users\nolan\Anaconda3\lib\tkinter\__init__.py", line 3743, in insert
+    self.tk.call((self._w, 'insert', index, chars) + args)
+RuntimeError: main thread is not in main loop
+2025-08-23 17:46:15,490 - core.event_bus - ERROR - event_bus:publish:69
+Message: Error in event callback for user_message: main thread is not in main loop
+Exception: (<class 'RuntimeError'>, RuntimeError('main thread is not in main loop'), <traceback object at 0x000001EEF8ADEC40>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\event_bus.py", line 67, in publish
+    callback(data)
+  File "C:\Users\nolan\personal\personal-projects\Nabu\ui\conversation.py", line 263, in _on_user_message
+    self._add_message("User", text, "user")
+  File "C:\Users\nolan\personal\personal-projects\Nabu\ui\conversation.py", line 224, in _add_message
+    self.conversation_text.insert(tk.END, formatted_message)
+  File "C:\Users\nolan\Anaconda3\lib\tkinter\__init__.py", line 3743, in insert
+    self.tk.call((self._w, 'insert', index, chars) + args)
+RuntimeError: main thread is not in main loop
+2025-08-23 17:46:17,030 - core.event_bus - ERROR - event_bus:publish:69
+Message: Error in event callback for ai_response: main thread is not in main loop
+Exception: (<class 'RuntimeError'>, RuntimeError('main thread is not in main loop'), <traceback object at 0x000001EEF8ADC840>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\event_bus.py", line 67, in publish
+    callback(data)
+  File "C:\Users\nolan\personal\personal-projects\Nabu\ui\conversation.py", line 270, in _on_ai_response
+    self._add_message("AI", text, "ai")
+  File "C:\Users\nolan\personal\personal-projects\Nabu\ui\conversation.py", line 224, in _add_message
+    self.conversation_text.insert(tk.END, formatted_message)
+  File "C:\Users\nolan\Anaconda3\lib\tkinter\__init__.py", line 3743, in insert
+    self.tk.call((self._w, 'insert', index, chars) + args)
+RuntimeError: main thread is not in main loop
+2025-08-23 18:31:08,577 - ui.vocab_tab - ERROR - vocab_tab:_load_vocabulary:224
+Message: Error loading vocabulary: 'DatabaseManager' object has no attribute 'execute_query'
+Exception: None
+---
+
+2025-08-23 18:31:08,601 - ui.media_tab - ERROR - media_tab:_load_media:231
+Message: Error loading media: 'DatabaseManager' object has no attribute 'execute_query'
+Exception: None
+---
+
+2025-08-23 18:31:08,609 - ui.grammar_tab - ERROR - grammar_tab:_load_grammar_topics:225
+Message: Error loading grammar topics: 'DatabaseManager' object has no attribute 'execute_query'
+Exception: None
+---
+
+2025-08-23 18:31:08,618 - ui.notes_tab - ERROR - notes_tab:_load_notes:224
+Message: Error loading notes: 'DatabaseManager' object has no attribute 'execute_query'
+Exception: None
+---
+
+2025-08-23 18:31:08,675 - __main__ - ERROR - main:main:68
+Message: Application crashed: name 'config' is not defined
+Exception: (<class 'NameError'>, NameError("name 'config' is not defined"), <traceback object at 0x000002B5B27D6780>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\main.py", line 59, in main
+    app = TutorApplication()
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\application.py", line 45, in __init__
+    self._initialize_ui()
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\application.py", line 92, in _initialize_ui
+    self.conversation_frame = ConversationFrame(
+  File "C:\Users\nolan\personal\personal-projects\Nabu\ui\conversation.py", line 37, in __init__
+    self._setup_ui()
+  File "C:\Users\nolan\personal\personal-projects\Nabu\ui\conversation.py", line 121, in _setup_ui
+    self.test_mode_var = tk.BooleanVar(value=config.learning.test_mode)
+NameError: name 'config' is not defined
+2025-08-23 18:31:34,843 - ui.vocab_tab - ERROR - vocab_tab:_load_vocabulary:224
+Message: Error loading vocabulary: 'DatabaseManager' object has no attribute 'execute_query'
+Exception: None
+---
+
+2025-08-23 18:31:34,879 - ui.media_tab - ERROR - media_tab:_load_media:231
+Message: Error loading media: 'DatabaseManager' object has no attribute 'execute_query'
+Exception: None
+---
+
+2025-08-23 18:31:34,888 - ui.grammar_tab - ERROR - grammar_tab:_load_grammar_topics:225
+Message: Error loading grammar topics: 'DatabaseManager' object has no attribute 'execute_query'
+Exception: None
+---
+
+2025-08-23 18:31:34,900 - ui.notes_tab - ERROR - notes_tab:_load_notes:224
+Message: Error loading notes: 'DatabaseManager' object has no attribute 'execute_query'
+Exception: None
+---
+
+2025-08-23 18:31:34,976 - __main__ - ERROR - main:main:68
+Message: Application crashed: name 'config' is not defined
+Exception: (<class 'NameError'>, NameError("name 'config' is not defined"), <traceback object at 0x000001AB095245C0>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\main.py", line 59, in main
+    app = TutorApplication()
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\application.py", line 45, in __init__
+    self._initialize_ui()
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\application.py", line 92, in _initialize_ui
+    self.conversation_frame = ConversationFrame(
+  File "C:\Users\nolan\personal\personal-projects\Nabu\ui\conversation.py", line 37, in __init__
+    self._setup_ui()
+  File "C:\Users\nolan\personal\personal-projects\Nabu\ui\conversation.py", line 121, in _setup_ui
+    self.test_mode_var = tk.BooleanVar(value=config.learning.test_mode)
+NameError: name 'config' is not defined
+2025-08-23 18:35:39,394 - ui.vocab_tab - ERROR - vocab_tab:_load_vocabulary:224
+Message: Error loading vocabulary: Cannot operate on a closed database.
+Exception: None
+---
+
+2025-08-23 18:35:39,425 - ui.media_tab - ERROR - media_tab:_load_media:231
+Message: Error loading media: Cannot operate on a closed database.
+Exception: None
+---
+
+2025-08-23 18:35:39,436 - ui.grammar_tab - ERROR - grammar_tab:_load_grammar_topics:225
+Message: Error loading grammar topics: Cannot operate on a closed database.
+Exception: None
+---
+
+2025-08-23 18:35:39,447 - data.database - ERROR - database:get_connection:66
+Message: Database operation failed: no such column: title
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('no such column: title'), <traceback object at 0x00000197AA9CF480>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 62, in get_connection
+    yield conn
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 104, in execute
+    cursor = conn.execute(query, params)
+sqlite3.OperationalError: no such column: title
+2025-08-23 18:35:39,450 - ui.notes_tab - ERROR - notes_tab:_load_notes:224
+Message: Error loading notes: no such column: title
+Exception: None
+---
+
+2025-08-23 18:35:44,686 - ui.vocab_tab - ERROR - vocab_tab:_load_vocabulary:224
+Message: Error loading vocabulary: Cannot operate on a closed database.
+Exception: None
+---
+
+2025-08-23 18:35:45,722 - ui.media_tab - ERROR - media_tab:_load_media:231
+Message: Error loading media: Cannot operate on a closed database.
+Exception: None
+---
+
+2025-08-23 18:35:46,928 - ui.grammar_tab - ERROR - grammar_tab:_load_grammar_topics:225
+Message: Error loading grammar topics: Cannot operate on a closed database.
+Exception: None
+---
+
+2025-08-23 18:35:47,923 - data.database - ERROR - database:get_connection:66
+Message: Database operation failed: no such column: title
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('no such column: title'), <traceback object at 0x00000197AA9E1740>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 62, in get_connection
+    yield conn
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 104, in execute
+    cursor = conn.execute(query, params)
+sqlite3.OperationalError: no such column: title
+2025-08-23 18:35:47,925 - ui.notes_tab - ERROR - notes_tab:_load_notes:224
+Message: Error loading notes: no such column: title
+Exception: None
+---
+
+2025-08-23 18:35:53,404 - ui.grammar_tab - ERROR - grammar_tab:_load_grammar_topics:225
+Message: Error loading grammar topics: Cannot operate on a closed database.
+Exception: None
+---
+
+2025-08-23 18:35:53,911 - data.database - ERROR - database:get_connection:66
+Message: Database operation failed: no such column: title
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('no such column: title'), <traceback object at 0x00000197AAAA2880>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 62, in get_connection
+    yield conn
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 104, in execute
+    cursor = conn.execute(query, params)
+sqlite3.OperationalError: no such column: title
+2025-08-23 18:35:53,914 - ui.notes_tab - ERROR - notes_tab:_load_notes:224
+Message: Error loading notes: no such column: title
+Exception: None
+---
+
+2025-08-23 18:35:54,588 - ui.grammar_tab - ERROR - grammar_tab:_load_grammar_topics:225
+Message: Error loading grammar topics: Cannot operate on a closed database.
+Exception: None
+---
+
+2025-08-23 18:35:55,071 - ui.media_tab - ERROR - media_tab:_load_media:231
+Message: Error loading media: Cannot operate on a closed database.
+Exception: None
+---
+
+2025-08-23 18:35:55,550 - ui.vocab_tab - ERROR - vocab_tab:_load_vocabulary:224
+Message: Error loading vocabulary: Cannot operate on a closed database.
+Exception: None
+---
+
+2025-08-23 18:42:31,489 - ui.vocab_tab - ERROR - vocab_tab:_load_vocabulary:228
+Message: Error loading vocabulary: Cannot operate on a closed database.
+Exception: None
+---
+
+2025-08-23 18:42:31,510 - ui.media_tab - ERROR - media_tab:_load_media:235
+Message: Error loading media: Cannot operate on a closed database.
+Exception: None
+---
+
+2025-08-23 18:42:31,534 - ui.grammar_tab - ERROR - grammar_tab:_load_grammar_topics:229
+Message: Error loading grammar topics: Cannot operate on a closed database.
+Exception: None
+---
+
+2025-08-23 18:42:31,568 - data.database - ERROR - database:get_connection:66
+Message: Database operation failed: no such column: title
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('no such column: title'), <traceback object at 0x000001408D16F140>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 62, in get_connection
+    yield conn
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 104, in execute
+    cursor = conn.execute(query, params)
+sqlite3.OperationalError: no such column: title
+2025-08-23 18:42:31,570 - ui.notes_tab - ERROR - notes_tab:_load_notes:226
+Message: Error loading notes: no such column: title
+Exception: None
+---
+
+2025-08-23 18:42:35,560 - ui.vocab_tab - ERROR - vocab_tab:_load_vocabulary:228
+Message: Error loading vocabulary: Cannot operate on a closed database.
+Exception: None
+---
+
+2025-08-23 18:42:36,049 - ui.media_tab - ERROR - media_tab:_load_media:235
+Message: Error loading media: Cannot operate on a closed database.
+Exception: None
+---
+
+2025-08-23 18:42:36,489 - ui.grammar_tab - ERROR - grammar_tab:_load_grammar_topics:229
+Message: Error loading grammar topics: Cannot operate on a closed database.
+Exception: None
+---
+
+2025-08-23 18:42:36,900 - data.database - ERROR - database:get_connection:66
+Message: Database operation failed: no such column: title
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('no such column: title'), <traceback object at 0x000001408D186480>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 62, in get_connection
+    yield conn
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 104, in execute
+    cursor = conn.execute(query, params)
+sqlite3.OperationalError: no such column: title
+2025-08-23 18:42:36,904 - ui.notes_tab - ERROR - notes_tab:_load_notes:226
+Message: Error loading notes: no such column: title
+Exception: None
+---
+
+2025-08-23 18:43:47,236 - data.database - ERROR - database:get_connection:66
+Message: Database operation failed: no such column: title
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('no such column: title'), <traceback object at 0x000002D5D8662440>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 62, in get_connection
+    yield conn
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 104, in execute
+    cursor = conn.execute(query, params)
+sqlite3.OperationalError: no such column: title
+2025-08-23 18:43:47,239 - ui.notes_tab - ERROR - notes_tab:_load_notes:226
+Message: Error loading notes: no such column: title
+Exception: None
+---
+
+2025-08-23 18:52:03,181 - data.database - ERROR - database:get_connection:66
+Message: Database operation failed: no such column: v.mastery_score
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('no such column: v.mastery_score'), <traceback object at 0x0000023DC6C3B3C0>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 62, in get_connection
+    yield conn
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 104, in execute
+    cursor = conn.execute(query, params)
+sqlite3.OperationalError: no such column: v.mastery_score
+2025-08-23 18:52:03,183 - ui.vocab_tab - ERROR - vocab_tab:_load_vocabulary:243
+Message: Error loading vocabulary: no such column: v.mastery_score
+Exception: None
+---
+
+2025-08-23 19:28:25,955 - data.database - ERROR - database:get_connection:66
+Message: Database operation failed: table learning_sessions has no column named started_at
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('table learning_sessions has no column named started_at'), <traceback object at 0x000001E0418C7D40>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 62, in get_connection
+    yield conn
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 154, in insert
+    cursor = conn.execute(query, tuple(sanitized_data.values()))
+sqlite3.OperationalError: table learning_sessions has no column named started_at
+2025-08-23 19:28:25,965 - core.session_manager - ERROR - session_manager:_save_session_to_db:312
+Message: Failed to save session to database: table learning_sessions has no column named started_at
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('table learning_sessions has no column named started_at'), <traceback object at 0x000001E0415AA100>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\session_manager.py", line 309, in _save_session_to_db
+    self.db.insert('learning_sessions', data)
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 154, in insert
+    cursor = conn.execute(query, tuple(sanitized_data.values()))
+sqlite3.OperationalError: table learning_sessions has no column named started_at
+2025-08-23 19:28:50,690 - data.database - ERROR - database:get_connection:66
+Message: Database operation failed: no such column: ended_at
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('no such column: ended_at'), <traceback object at 0x000001E045E11100>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 62, in get_connection
+    yield conn
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 165, in update
+    cursor = conn.execute(query, tuple(sanitized_data.values()) + where_params)
+sqlite3.OperationalError: no such column: ended_at
+2025-08-23 19:28:50,693 - core.session_manager - ERROR - session_manager:_update_session_in_db:331
+Message: Failed to update session in database: no such column: ended_at
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('no such column: ended_at'), <traceback object at 0x000001E045E18D00>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\session_manager.py", line 328, in _update_session_in_db
+    self.db.update('learning_sessions', data, 'id = ?', (session.session_id,))
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 165, in update
+    cursor = conn.execute(query, tuple(sanitized_data.values()) + where_params)
+sqlite3.OperationalError: no such column: ended_at
+2025-08-23 19:28:54,485 - data.database - ERROR - database:get_connection:66
+Message: Database operation failed: no such column: ended_at
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('no such column: ended_at'), <traceback object at 0x000001E045DE5EC0>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 62, in get_connection
+    yield conn
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 165, in update
+    cursor = conn.execute(query, tuple(sanitized_data.values()) + where_params)
+sqlite3.OperationalError: no such column: ended_at
+2025-08-23 19:28:54,490 - core.session_manager - ERROR - session_manager:_update_session_in_db:331
+Message: Failed to update session in database: no such column: ended_at
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('no such column: ended_at'), <traceback object at 0x000001E045DDD6C0>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\session_manager.py", line 328, in _update_session_in_db
+    self.db.update('learning_sessions', data, 'id = ?', (session.session_id,))
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 165, in update
+    cursor = conn.execute(query, tuple(sanitized_data.values()) + where_params)
+sqlite3.OperationalError: no such column: ended_at
+2025-08-23 19:30:07,306 - data.database - ERROR - database:get_connection:66
+Message: Database operation failed: table learning_sessions has no column named mode
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('table learning_sessions has no column named mode'), <traceback object at 0x0000023800177D80>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 62, in get_connection
+    yield conn
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 154, in insert
+    cursor = conn.execute(query, tuple(sanitized_data.values()))
+sqlite3.OperationalError: table learning_sessions has no column named mode
+2025-08-23 19:30:07,312 - core.session_manager - ERROR - session_manager:_save_session_to_db:312
+Message: Failed to save session to database: table learning_sessions has no column named mode
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('table learning_sessions has no column named mode'), <traceback object at 0x000002387FE5A240>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\session_manager.py", line 309, in _save_session_to_db
+    self.db.insert('learning_sessions', data)
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 154, in insert
+    cursor = conn.execute(query, tuple(sanitized_data.values()))
+sqlite3.OperationalError: table learning_sessions has no column named mode
+2025-08-23 19:30:26,628 - data.database - ERROR - database:get_connection:66
+Message: Database operation failed: no such column: summary
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('no such column: summary'), <traceback object at 0x000002380464E6C0>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 62, in get_connection
+    yield conn
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 165, in update
+    cursor = conn.execute(query, tuple(sanitized_data.values()) + where_params)
+sqlite3.OperationalError: no such column: summary
+2025-08-23 19:30:26,635 - core.session_manager - ERROR - session_manager:_update_session_in_db:331
+Message: Failed to update session in database: no such column: summary
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('no such column: summary'), <traceback object at 0x0000023804614E00>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\session_manager.py", line 328, in _update_session_in_db
+    self.db.update('learning_sessions', data, 'id = ?', (session.session_id,))
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 165, in update
+    cursor = conn.execute(query, tuple(sanitized_data.values()) + where_params)
+sqlite3.OperationalError: no such column: summary
+2025-08-23 19:51:39,238 - data.database - ERROR - database:get_connection:66
+Message: Database operation failed: table learning_sessions has no column named vocab_practiced
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('table learning_sessions has no column named vocab_practiced'), <traceback object at 0x0000028DC52C8600>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 62, in get_connection
+    yield conn
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 154, in insert
+    cursor = conn.execute(query, tuple(sanitized_data.values()))
+sqlite3.OperationalError: table learning_sessions has no column named vocab_practiced
+2025-08-23 19:51:39,242 - core.session_manager - ERROR - session_manager:_save_session_to_db:335
+Message: Failed to save session to database: table learning_sessions has no column named vocab_practiced
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('table learning_sessions has no column named vocab_practiced'), <traceback object at 0x0000028DC3FCCD40>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\session_manager.py", line 332, in _save_session_to_db
+    self.db.insert('learning_sessions', data)
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 154, in insert
+    cursor = conn.execute(query, tuple(sanitized_data.values()))
+sqlite3.OperationalError: table learning_sessions has no column named vocab_practiced
+2025-08-23 19:51:55,771 - data.database - ERROR - database:get_connection:66
+Message: Database operation failed: no such column: vocab_practiced
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('no such column: vocab_practiced'), <traceback object at 0x0000028DC87BBB00>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 62, in get_connection
+    yield conn
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 165, in update
+    cursor = conn.execute(query, tuple(sanitized_data.values()) + where_params)
+sqlite3.OperationalError: no such column: vocab_practiced
+2025-08-23 19:51:55,774 - core.session_manager - ERROR - session_manager:_update_session_in_db:354
+Message: Failed to update session in database: no such column: vocab_practiced
+Exception: (<class 'sqlite3.OperationalError'>, OperationalError('no such column: vocab_practiced'), <traceback object at 0x0000028DC825E800>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\session_manager.py", line 351, in _update_session_in_db
+    self.db.update('learning_sessions', data, 'id = ?', (session.session_id,))
+  File "C:\Users\nolan\personal\personal-projects\Nabu\data\database.py", line 165, in update
+    cursor = conn.execute(query, tuple(sanitized_data.values()) + where_params)
+sqlite3.OperationalError: no such column: vocab_practiced
+2025-08-23 19:51:55,777 - core.session_manager - ERROR - session_manager:_generate_session_notes:439
+Message: Error generating session notes: name 'config' is not defined
+Exception: None
+---
+
+2025-08-23 20:02:44,883 - __main__ - ERROR - main:main:68
+Message: Application crashed: 'TabManager' object has no attribute 'nav_buttons'
+Exception: (<class 'AttributeError'>, AttributeError("'TabManager' object has no attribute 'nav_buttons'"), <traceback object at 0x0000022BC74BBD40>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\main.py", line 59, in main
+    app = TutorApplication()
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\application.py", line 45, in __init__
+    self._initialize_ui()
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\application.py", line 85, in _initialize_ui
+    self.tab_manager = TabManager(
+  File "C:\Users\nolan\personal\personal-projects\Nabu\ui\tab_manager.py", line 41, in __init__
+    self._create_tabs()
+  File "C:\Users\nolan\personal\personal-projects\Nabu\ui\tab_manager.py", line 106, in _create_tabs
+    self._show_tab('home')
+  File "C:\Users\nolan\personal\personal-projects\Nabu\ui\tab_manager.py", line 224, in _show_tab
+    for key, btn in self.nav_buttons.items():
+AttributeError: 'TabManager' object has no attribute 'nav_buttons'
+2025-08-23 20:04:08,646 - __main__ - ERROR - main:main:68
+Message: Application crashed: 'TabManager' object has no attribute 'nav_buttons'
+Exception: (<class 'AttributeError'>, AttributeError("'TabManager' object has no attribute 'nav_buttons'"), <traceback object at 0x000002AB88C7B880>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\main.py", line 59, in main
+    app = TutorApplication()
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\application.py", line 45, in __init__
+    self._initialize_ui()
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\application.py", line 85, in _initialize_ui
+    self.tab_manager = TabManager(
+  File "C:\Users\nolan\personal\personal-projects\Nabu\ui\tab_manager.py", line 41, in __init__
+    self._create_tabs()
+  File "C:\Users\nolan\personal\personal-projects\Nabu\ui\tab_manager.py", line 106, in _create_tabs
+    self._show_tab('home')
+  File "C:\Users\nolan\personal\personal-projects\Nabu\ui\tab_manager.py", line 224, in _show_tab
+    for key, btn in self.nav_buttons.items():
+AttributeError: 'TabManager' object has no attribute 'nav_buttons'
+2025-08-23 20:05:41,252 - __main__ - ERROR - main:main:68
+Message: Application crashed: 'TabManager' object has no attribute 'tab_container'
+Exception: (<class 'AttributeError'>, AttributeError("'TabManager' object has no attribute 'tab_container'"), <traceback object at 0x0000025CCC327500>)
+---
+Traceback (most recent call last):
+  File "C:\Users\nolan\personal\personal-projects\Nabu\main.py", line 59, in main
+    app = TutorApplication()
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\application.py", line 45, in __init__
+    self._initialize_ui()
+  File "C:\Users\nolan\personal\personal-projects\Nabu\core\application.py", line 101, in _initialize_ui
+    self.current_frame = self.tab_manager.tab_container
+AttributeError: 'TabManager' object has no attribute 'tab_container'

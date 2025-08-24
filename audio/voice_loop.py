@@ -13,6 +13,7 @@ import requests
 import tempfile
 import os
 import time
+from datetime import datetime
 from io import BytesIO
 import pygame
 from typing import Optional, List, Dict, Any
@@ -21,6 +22,7 @@ from dataclasses import dataclass
 from utils.logger import get_logger
 from core.event_bus import EventBus, EventTypes
 from config import config
+from data.database import DatabaseManager
 
 
 @dataclass
@@ -44,13 +46,13 @@ class VoiceLoop:
         self.logger = get_logger(__name__)
         self.event_bus = event_bus
         
-        # Audio configuration - balanced to detect speech while filtering noise
+        # Audio configuration - balanced for responsiveness and accuracy
         self.config = AudioConfig(
             sample_rate=16000,
             chunk_size=1024,
             channels=1,
-            silence_threshold=1.0,  # Reduced for faster response
-            min_speech_duration=0.5,  # Reduced for more responsive detection
+            silence_threshold=1.2,  # Slightly reduced for faster response
+            min_speech_duration=0.4,  # Slightly reduced for more responsive detection
             rms_threshold=60,  # Keep strict RMS threshold
             zcr_threshold=0.03,  # Keep strict ZCR threshold
             debug_audio=True
@@ -66,6 +68,9 @@ class VoiceLoop:
         
         # OpenAI client
         self.client = OpenAI(api_key=config.openai_api_key)
+        
+        # Database manager for logging
+        self.db_manager = DatabaseManager()
         
         # Conversation history
         self.conversation_history: List[Dict[str, str]] = []
@@ -200,19 +205,18 @@ class VoiceLoop:
             zero_crossings = np.sum(np.diff(np.sign(audio_data)) != 0)
             zero_crossing_rate = zero_crossings / len(audio_data)
             
-            # Thresholds for speech detection (balanced for sensitivity and filtering)
-            rms_threshold = 40  # Lowered for better speech detection
-            zcr_threshold = 0.02  # Lowered for better speech detection
-            
+            # Thresholds for speech detection (fine-tuned for better balance)
+            rms_threshold = 35  # Lowered to catch more speech while filtering noise
+            zcr_threshold = 0.08  # Lowered to be more sensitive to speech patterns
             # Check if audio meets speech criteria
             has_speech = rms > rms_threshold and zero_crossing_rate > zcr_threshold
             
-            # Additional checks for different speech patterns (more sensitive)
-            if rms > 100:  # Lowered for loud speech
+            # Additional checks for different speech patterns (balanced approach)
+            if rms > 70:  # Loud speech
                 has_speech = True
-            elif rms > 60 and zero_crossing_rate > 0.15:  # Lowered thresholds
+            elif rms > 45 and zero_crossing_rate > 0.12:  # Medium speech with moderate ZCR
                 has_speech = True
-            elif rms > 40 and zero_crossing_rate > 0.25:  # Lowered thresholds
+            elif rms > 30 and zero_crossing_rate > 0.18:  # Lower RMS but higher ZCR
                 has_speech = True
             
             if self.config.debug_audio:
@@ -254,7 +258,8 @@ class VoiceLoop:
                 with open(temp_filename, 'rb') as audio_file:
                     transcript = self.client.audio.transcriptions.create(
                         model="whisper-1",
-                        file=audio_file
+                        file=audio_file,
+                        language=config.learning.target_language  # Use configured target language
                     )
                 
                 # Clean up temp file
@@ -281,13 +286,22 @@ class VoiceLoop:
                         self.logger.debug(f"Filtered out thank you variation: '{user_text}'")
                         return
                     
-                    if (len(user_text) < 3 or  # Reduced minimum length
+                    # Additional filtering for random audio and noise
+                    if (len(user_text) < 4 or  # Increased minimum length
                         user_text.lower().strip() in meaningless_responses or
                         user_text in ['.', '..', '...', ',', '!', '?'] or
                         len(user_text.strip()) == 0 or
-                        text_lower in ['thank', 'thanks', 'thank you', 'thankyou']):  # Extra check for thank you
-                        self.logger.debug(f"Filtered out short/meaningless response: '{user_text}'")
-                        return  # Skip very short or meaningless responses
+                        text_lower in ['thank', 'thanks', 'thank you', 'thankyou'] or
+                        # Filter out random character sequences and noise
+                        len(set(user_text.lower())) < 3 or  # Too few unique characters
+                        user_text.count(' ') > len(user_text) * 0.8 or  # Too many spaces
+                        any(char.isdigit() for char in user_text) and len(user_text) < 10):  # Numbers in short text
+                        self.logger.debug(f"Filtered out noise/random audio: '{user_text}'")
+                        return  # Skip noise and random audio
+                    
+                    # Log user message if not in test mode
+                    if not config.learning.test_mode:
+                        self._log_conversation_message("user", "text", user_text, config.learning.target_language)
                     
                     # Publish user message event
                     self.event_bus.publish(EventTypes.USER_MESSAGE, {
@@ -321,9 +335,21 @@ class VoiceLoop:
             if len(self.conversation_history) > 10:
                 self.conversation_history = self.conversation_history[-10:]
             
-            # Prepare messages for API call
+            # Prepare messages for API call with language context
+            target_lang = config.learning.target_language
+            native_lang = config.learning.native_language
+            
+            # Create language-aware system prompt
+            if target_lang != native_lang:
+                system_prompt = f"You are an AI language tutor helping someone learn {self._get_language_name(target_lang)}. " \
+                               f"The user's native language is {self._get_language_name(native_lang)}. " \
+                               f"Respond in {self._get_language_name(target_lang)} and keep responses short and conversational. " \
+                               f"Provide gentle corrections and encourage learning."
+            else:
+                system_prompt = "You are a helpful AI assistant. Keep responses short and conversational."
+            
             messages = [
-                {"role": "system", "content": "You are a helpful AI assistant. Keep responses short and conversational."}
+                {"role": "system", "content": system_prompt}
             ] + self.conversation_history
             
             response = self.client.chat.completions.create(
@@ -337,6 +363,10 @@ class VoiceLoop:
             
             # Add AI response to history
             self.conversation_history.append({"role": "assistant", "content": ai_response})
+            
+            # Log AI response if not in test mode
+            if not config.learning.test_mode:
+                self._log_conversation_message("ai", "text", ai_response, config.learning.target_language)
             
             # Publish AI response event
             self.event_bus.publish(EventTypes.AI_RESPONSE, {
@@ -354,7 +384,10 @@ class VoiceLoop:
     def _text_to_speech(self, text: str):
         """Convert text to speech using ElevenLabs."""
         try:
-            url = "https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM"
+            # Select voice based on target language for better pronunciation
+            voice_id = self._get_voice_for_language(config.learning.target_language)
+            
+            url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
             
             headers = {
                 "Accept": "audio/mpeg",
@@ -362,12 +395,18 @@ class VoiceLoop:
                 "xi-api-key": config.elevenlabs_api_key
             }
             
+            # Use multilingual model for better language support
+            model_id = "eleven_multilingual_v2" if config.learning.target_language != "en" else "eleven_monolingual_v1"
+            
             data = {
                 "text": text,
-                "model_id": "eleven_monolingual_v1",
+                "model_id": model_id,
                 "voice_settings": {
-                    "stability": 0.5,
-                    "similarity_boost": 0.5
+                    "stability": 0.7,  # Increased for more consistent pronunciation
+                    "similarity_boost": 0.8,  # Increased for better voice quality
+                    "style": 0.0,  # Neutral style for language learning
+                    "use_speaker_boost": True,  # Enhance speaker clarity
+                    "speaking_rate": 0.75  # Slow down speech rate (0.75 = 75% of normal speed)
                 }
             }
             
@@ -416,6 +455,60 @@ class VoiceLoop:
         except Exception as e:
             self.logger.error(f"Audio playback error: {e}")
     
+    def _get_language_name(self, lang_code: str) -> str:
+        """Convert language code to language name."""
+        language_names = {
+            'en': 'English',
+            'es': 'Spanish', 
+            'fr': 'French',
+            'de': 'German',
+            'it': 'Italian',
+            'pt': 'Portuguese',
+            'ru': 'Russian',
+            'ja': 'Japanese',
+            'ko': 'Korean',
+            'zh': 'Chinese',
+            'ar': 'Arabic',
+            'hi': 'Hindi',
+            'nl': 'Dutch',
+            'sv': 'Swedish',
+            'da': 'Danish',
+            'no': 'Norwegian',
+            'fi': 'Finnish',
+            'pl': 'Polish',
+            'tr': 'Turkish',
+            'el': 'Greek'
+        }
+        return language_names.get(lang_code, lang_code.upper())
+    
+    def _get_voice_for_language(self, lang_code: str) -> str:
+        """Get the best ElevenLabs voice ID for the target language."""
+        # ElevenLabs voice IDs optimized for different languages
+        # These are high-quality voices that work well with the multilingual model
+        voice_mapping = {
+            'en': '21m00Tcm4TlvDq8ikWAM',  # Rachel - English
+            'es': 'EXAVITQu4vr4xnSDxMaL',  # Bella - Spanish
+            'fr': 'yoZ06aMxZJJ28mfd3POQ',  # Josh - French
+            'de': 'AZnzlk1XvdvUeBnXmlld',  # Domi - German
+            'it': 'pNInz6obpgDQGcFmaJgB',  # Adam - Italian
+            'pt': 'VR6AewLTigWG4xSOukaG',  # Arnold - Portuguese
+            'ru': 'VR6AewLTigWG4xSOukaG',  # Arnold - Russian (good for Slavic languages)
+            'ja': 'VR6AewLTigWG4xSOukaG',  # Arnold - Japanese
+            'ko': 'VR6AewLTigWG4xSOukaG',  # Arnold - Korean
+            'zh': 'VR6AewLTigWG4xSOukaG',  # Arnold - Chinese
+            'ar': 'VR6AewLTigWG4xSOukaG',  # Arnold - Arabic
+            'hi': 'VR6AewLTigWG4xSOukaG',  # Arnold - Hindi
+            'nl': 'VR6AewLTigWG4xSOukaG',  # Arnold - Dutch
+            'sv': 'VR6AewLTigWG4xSOukaG',  # Arnold - Swedish
+            'da': 'VR6AewLTigWG4xSOukaG',  # Arnold - Danish
+            'no': 'VR6AewLTigWG4xSOukaG',  # Arnold - Norwegian
+            'fi': 'VR6AewLTigWG4xSOukaG',  # Arnold - Finnish
+            'pl': 'VR6AewLTigWG4xSOukaG',  # Arnold - Polish
+            'tr': 'VR6AewLTigWG4xSOukaG',  # Arnold - Turkish
+            'el': 'VR6AewLTigWG4xSOukaG'   # Arnold - Greek
+        }
+        return voice_mapping.get(lang_code, '21m00Tcm4TlvDq8ikWAM')  # Default to Rachel
+    
     def cleanup(self):
         """Clean up audio resources."""
         try:
@@ -425,3 +518,24 @@ class VoiceLoop:
             self.logger.info("VoiceLoop cleanup completed")
         except Exception as e:
             self.logger.error(f"VoiceLoop cleanup error: {e}")
+    
+    def _log_conversation_message(self, sender: str, message_type: str, content: str, language: str):
+        """Log a conversation message to the database."""
+        try:
+            # Get current session ID
+            session_id = "test_session"  # Default for now
+            # TODO: Get actual session ID from session manager
+            
+            self.db_manager.insert('conversation_messages', {
+                'session_id': session_id,
+                'sender': sender,
+                'message_type': message_type,
+                'content': content,
+                'language': language,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+            self.logger.debug(f"Logged {sender} message: {content[:50]}...")
+            
+        except Exception as e:
+            self.logger.error(f"Error logging conversation message: {e}")

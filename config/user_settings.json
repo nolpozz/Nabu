@@ -19,6 +19,8 @@
   "learning": {
     "srs_enabled": true,
     "max_active_vocab": 750,
-    "difficulty_adjustment_rate": 0.1
+    "difficulty_adjustment_rate": 0.1,
+    "target_language": "ru",
+    "native_language": "en"
   }
 }

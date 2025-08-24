@@ -13,6 +13,7 @@ from utils.logger import get_logger
 from core.event_bus import EventBus, EventTypes
 from core.session_manager import SessionManager
 from ui.theme import DarkTheme
+from config import config
 
 
 class ConversationFrame:
@@ -48,7 +49,7 @@ class ConversationFrame:
         # Title
         self.title_label = self.theme.create_styled_label(
             self.frame, 
-            text="🎤 AI Language Tutor - Conversation",
+            text="🎤 Nabu - AI Language Tutor",
             size='xl'
         )
         self.title_label.grid(row=0, column=0, pady=(self.theme.SPACING['lg'], self.theme.SPACING['md']))
@@ -97,6 +98,13 @@ class ConversationFrame:
             self.control_frame,
             text="🎤 Start Recording",
             command=self._toggle_recording,
+        )
+        self.record_button.grid(row=1, column=0, padx=(0, self.theme.SPACING['sm']))
+        
+        self.end_session_button = self.theme.create_styled_button(
+            self.control_frame,
+            text="⏹️ End Session",
+            command=self._end_session,
             style="primary"
         )
         self.record_button.grid(row=1, column=0, padx=(0, self.theme.SPACING['sm']))
@@ -117,8 +125,24 @@ class ConversationFrame:
         )
         self.clear_button.grid(row=1, column=2, padx=(self.theme.SPACING['sm'], 0))
         
+        # Test mode toggle
+        self.test_mode_var = tk.BooleanVar(value=config.learning.test_mode)
+        self.test_mode_checkbox = tk.Checkbutton(
+            self.control_frame,
+            text="🧪 Test Mode (no logging)",
+            variable=self.test_mode_var,
+            bg=self.theme.PRIMARY_BG,
+            fg=self.theme.TEXT_PRIMARY,
+            selectcolor=self.theme.ELEVATED_BG,
+            activebackground=self.theme.PRIMARY_BG,
+            activeforeground=self.theme.TEXT_PRIMARY,
+            font=(self.theme.FONT_FAMILY_PRIMARY[0], self.theme.FONT_SIZES['sm']),
+            command=self._toggle_test_mode
+        )
+        self.test_mode_checkbox.grid(row=2, column=0, columnspan=3, pady=(self.theme.SPACING['sm'], 0), sticky='w')
+        
         # Add welcome message
-        self._add_system_message("Welcome to AI Language Tutor! Click 'Start Recording' to begin your conversation.")
+        self._add_system_message("Welcome to Nabu! Click 'Start Recording' to begin your conversation.")
     
     def _setup_event_handlers(self):
         """Setup event handlers for audio and session events."""
@@ -184,13 +208,20 @@ class ConversationFrame:
             self.status_label.config(text=f"Error: {str(e)}")
     
     def _end_session(self):
-        """End the current session."""
+        """End the current session and generate notes."""
         try:
+            if self.is_recording:
+                self._stop_recording()
+            
             current_session = self.session_manager.get_current_session()
             if current_session:
                 session_id = self.session_manager.end_session()
-                self.status_label.config(text="Session ended")
+                self._add_system_message(f"Session ended. Generating learning notes...")
+                self.status_label.config(text="Session ended. Notes generated!")
                 self.logger.info(f"Session ended: {current_session}")
+                
+                # Navigate back to dashboard after a short delay
+                self.frame.after(2000, lambda: self.event_bus.publish(EventTypes.NAVIGATE_TO_DASHBOARD))
             else:
                 self.status_label.config(text="No active session")
                 
@@ -204,6 +235,13 @@ class ConversationFrame:
         self.messages.clear()
         self._add_system_message("Conversation cleared. Ready to start new conversation.")
         self.logger.info("Conversation cleared")
+    
+    def _toggle_test_mode(self):
+        """Toggle test mode on/off."""
+        config.learning.test_mode = self.test_mode_var.get()
+        status = "enabled" if config.learning.test_mode else "disabled"
+        self._add_system_message(f"🧪 Test mode {status} - conversations will not be logged to database.")
+        self.logger.info(f"Test mode {status}")
     
     def _add_message(self, sender: str, text: str, message_type: str = "user"):
         """Add a message to the conversation display."""
@@ -261,6 +299,8 @@ class ConversationFrame:
         text = data.get("text", "")
         if text:
             self._add_message("User", text, "user")
+            # Track message for note generation
+            self.session_manager.add_conversation_message("user", text)
             self.status_label.config(text="Getting AI response...")
     
     def _on_ai_response(self, data: Dict[str, Any]):
@@ -268,6 +308,8 @@ class ConversationFrame:
         text = data.get("text", "")
         if text:
             self._add_message("AI", text, "ai")
+            # Track message for note generation
+            self.session_manager.add_conversation_message("ai", text)
             self.status_label.config(text="Converting to speech...")
     
     def _on_ai_error(self, data: Dict[str, Any]):

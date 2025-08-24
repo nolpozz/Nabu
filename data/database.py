@@ -98,19 +98,23 @@ class DatabaseManager(LoggerMixin):
         
         return conn
     
-    def execute(self, query: str, params: tuple = ()) -> sqlite3.Cursor:
-        """Execute a query and return the cursor."""
+    def execute(self, query: str, params: tuple = ()) -> List[tuple]:
+        """Execute a query and return the results."""
         with self.get_connection() as conn:
             cursor = conn.execute(query, params)
             conn.commit()
-            return cursor
+            return cursor.fetchall()
     
-    def execute_many(self, query: str, params_list: List[tuple]) -> sqlite3.Cursor:
+    def execute_query(self, query: str, params: tuple = ()) -> List[tuple]:
+        """Execute a query and return the results (alias for execute)."""
+        return self.execute(query, params)
+    
+    def execute_many(self, query: str, params_list: List[tuple]) -> int:
         """Execute a query multiple times with different parameters."""
         with self.get_connection() as conn:
             cursor = conn.executemany(query, params_list)
             conn.commit()
-            return cursor
+            return cursor.rowcount
     
     def fetch_one(self, query: str, params: tuple = ()) -> Optional[tuple]:
         """Fetch a single row."""

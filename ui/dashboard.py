@@ -11,6 +11,7 @@ from utils.logger import get_logger
 from core.event_bus import EventBus, EventTypes
 from core.session_manager import SessionManager
 from .theme import DarkTheme
+from config import config
 
 
 class DashboardFrame:
@@ -32,87 +33,17 @@ class DashboardFrame:
         self._setup_layout()
         
         self.logger.info("Dashboard frame initialized")
+        self.logger.info(f"Dashboard frame created with parent: {parent}")
+        self.logger.info(f"Dashboard frame widget: {self.frame}")
     
     def _create_widgets(self):
         """Create dashboard widgets."""
-        # Left sidebar
-        self.sidebar = tk.Frame(
-            self.frame,
-            bg=self.theme.SURFACE_BG,
-            width=250,
-            relief='flat',
-            bd=0
-        )
-        
-        # Logo in sidebar
-        self.logo_frame = tk.Frame(self.sidebar, bg=self.theme.SURFACE_BG, relief='flat', bd=0)
-        self.logo_label = tk.Label(
-            self.logo_frame,
-            text="★ logo",
-            bg=self.theme.SURFACE_BG,
-            fg=self.theme.TEXT_PRIMARY,
-            font=(self.theme.FONT_FAMILY_PRIMARY[0], 18, 'bold')
-        )
-        
-        # Navigation tabs
-        self.nav_frame = tk.Frame(self.sidebar, bg=self.theme.SURFACE_BG, relief='flat', bd=0)
-        
-        # Navigation buttons with icons
-        self.nav_buttons = {}
-        nav_items = [
-            ("📚 Vocab", "vocab"),
-            ("💬 Media", "media"), 
-            ("📝 Notes", "notes"),
-            ("📖 Grammar", "grammar")
-        ]
-        
-        for text, key in nav_items:
-            btn = tk.Button(
-                self.nav_frame,
-                text=text,
-                bg=self.theme.SURFACE_BG,
-                fg=self.theme.TEXT_PRIMARY,
-                font=(self.theme.FONT_FAMILY_PRIMARY[0], 14),
-                relief='flat',
-                bd=0,
-                padx=20,
-                pady=12,
-                anchor='w',
-                cursor='hand2'
-            )
-            self.nav_buttons[key] = btn
-            
-            # Highlight first item (Vocab) as active
-            if key == "vocab":
-                btn.configure(bg=self.theme.ELEVATED_BG)
-        
-        # Main content area
+        # Main content area (no sidebar needed)
         self.main_content = tk.Frame(
             self.frame,
             bg=self.theme.PRIMARY_BG,
             relief='flat',
             bd=0
-        )
-        
-        # Header
-        self.header = tk.Frame(self.main_content, bg=self.theme.PRIMARY_BG, relief='flat', bd=0)
-        # Header left: logo placeholder
-        self.header_logo = tk.Label(
-            self.header,
-            text="logo",
-            bg=self.theme.PRIMARY_BG,
-            fg=self.theme.TEXT_PRIMARY,
-            font=(self.theme.FONT_FAMILY_PRIMARY[0], 16, 'bold')
-        )
-        
-        # Header right content (profile icon)
-        self.header_right = tk.Frame(self.header, bg=self.theme.PRIMARY_BG, relief='flat', bd=0)
-        self.profile_icon = tk.Label(
-            self.header_right,
-            text="👤",
-            bg=self.theme.PRIMARY_BG,
-            fg=self.theme.TEXT_PRIMARY,
-            font=(self.theme.FONT_FAMILY_PRIMARY[0], 20)
         )
         
         # Welcome section
@@ -263,79 +194,14 @@ class DashboardFrame:
             cursor='hand2',
             command=self._start_conversation
         )
-        
-        # Footer
-        self.footer = tk.Frame(self.main_content, bg=self.theme.PRIMARY_BG, relief='flat', bd=0)
-        
-        self.footer_left = tk.Label(
-            self.footer,
-            text="Made with Yisily",
-            bg=self.theme.PRIMARY_BG,
-            fg=self.theme.TEXT_MUTED,
-            font=(self.theme.FONT_FAMILY_PRIMARY[0], 12)
-        )
-        
-        self.footer_center = tk.Frame(self.footer, bg=self.theme.PRIMARY_BG, relief='flat', bd=0)
-        footer_links = ["Resources", "Legal", "Contact Us"]
-        for link in footer_links:
-            link_label = tk.Label(
-                self.footer_center,
-                text=link,
-                bg=self.theme.PRIMARY_BG,
-                fg=self.theme.TEXT_MUTED,
-                font=(self.theme.FONT_FAMILY_PRIMARY[0], 12),
-                cursor='hand2'
-            )
-            link_label.pack(side=tk.LEFT, padx=10)
-        
-        self.footer_right = tk.Frame(self.footer, bg=self.theme.PRIMARY_BG, relief='flat', bd=0)
-        social_icons = ["f", "🐦", "in"]
-        for icon in social_icons:
-            icon_label = tk.Label(
-                self.footer_right,
-                text=icon,
-                bg=self.theme.PRIMARY_BG,
-                fg=self.theme.TEXT_MUTED,
-                font=(self.theme.FONT_FAMILY_PRIMARY[0], 12),
-                cursor='hand2'
-            )
-            icon_label.pack(side=tk.LEFT, padx=5)
     
     def _setup_layout(self):
         """Set up the dashboard layout."""
-        # Configure main frame grid
-        self.frame.grid_columnconfigure(1, weight=1)
-        self.frame.grid_rowconfigure(0, weight=1)
+        self.logger.info("Setting up dashboard layout")
         
-        # Sidebar
-        self.sidebar.grid(row=0, column=0, sticky='nsew', padx=0, pady=0)
-        self.sidebar.grid_propagate(False)  # Maintain fixed width
-        
-        # Logo
-        self.logo_frame.pack(fill='x', padx=20, pady=(20, 30))
-        self.logo_label.pack(anchor='w')
-        
-        # Navigation
-        self.nav_frame.pack(fill='x', padx=0, pady=0)
-        for i, (key, btn) in enumerate(self.nav_buttons.items()):
-            btn.pack(fill='x', padx=0, pady=0)
-            # Add hover effects
-            btn.bind('<Enter>', lambda e, b=btn: b.configure(bg=self.theme.ELEVATED_BG))
-            btn.bind('<Leave>', lambda e, b=btn, k=key: b.configure(
-                bg=self.theme.ELEVATED_BG if k == "vocab" else self.theme.SURFACE_BG
-            ))
-        
-        # Main content
-        self.main_content.grid(row=0, column=1, sticky='nsew', padx=40, pady=20)
+        # Main content (full width since sidebar is handled by TabManager)
+        self.main_content.pack(fill='both', expand=True, padx=40, pady=20)
         self.main_content.grid_columnconfigure(0, weight=1)
-        
-        # Header
-        self.header.pack(fill='x', pady=(0, 20))
-        self.header.grid_columnconfigure(0, weight=1)
-        
-        # Header contents: logo left, profile right
-        self.header_logo.pack(side=tk.LEFT)
-        self.profile_icon.pack(side=tk.RIGHT)
         
         # Welcome section
         self.welcome_frame.pack(fill='x', pady=(0, 40))
@@ -381,25 +247,45 @@ class DashboardFrame:
         
         # Add hover effects to button
         self.start_button.bind('<Enter>', lambda e: self.start_button.configure(
-            bg=self.theme._lighten_color(self.theme.ACCENT_BLUE, 0.2)
+            bg=self._lighten_color(self.theme.ACCENT_BLUE, 0.2)
         ))
         self.start_button.bind('<Leave>', lambda e: self.start_button.configure(
             bg=self.theme.ACCENT_BLUE
         ))
         self.start_button.bind('<Button-1>', lambda e: self.start_button.configure(
-            bg=self.theme._darken_color(self.theme.ACCENT_BLUE, 0.2)
+            bg=self._darken_color(self.theme.ACCENT_BLUE, 0.2)
         ))
         self.start_button.bind('<ButtonRelease-1>', lambda e: self.start_button.configure(
-            bg=self.theme._lighten_color(self.theme.ACCENT_BLUE, 0.2)
+            bg=self._lighten_color(self.theme.ACCENT_BLUE, 0.2)
         ))
+    
+    def _lighten_color(self, color: str, factor: float) -> str:
+        """Lighten a hex color by a factor."""
+        # Convert hex to RGB
+        color = color.lstrip('#')
+        r, g, b = int(color[:2], 16), int(color[2:4], 16), int(color[4:], 16)
         
-        # Footer
-        self.footer.pack(fill='x', side=tk.BOTTOM)
-        self.footer.grid_columnconfigure(1, weight=1)
+        # Lighten
+        r = min(255, int(r + (255 - r) * factor))
+        g = min(255, int(g + (255 - g) * factor))
+        b = min(255, int(b + (255 - b) * factor))
         
-        self.footer_left.grid(row=0, column=0, sticky='w')
-        self.footer_center.grid(row=0, column=1)
-        self.footer_right.grid(row=0, column=2, sticky='e')
+        # Convert back to hex
+        return f"#{r:02x}{g:02x}{b:02x}"
+    
+    def _darken_color(self, color: str, factor: float) -> str:
+        """Darken a hex color by a factor."""
+        # Convert hex to RGB
+        color = color.lstrip('#')
+        r, g, b = int(color[:2], 16), int(color[2:4], 16), int(color[4:], 16)
+        
+        # Darken
+        r = max(0, int(r * (1 - factor)))
+        g = max(0, int(g * (1 - factor)))
+        b = max(0, int(b * (1 - factor)))
+        
+        # Convert back to hex
+        return f"#{r:02x}{g:02x}{b:02x}"
     
     def _start_conversation(self):
         """Start a conversation session."""
@@ -422,8 +308,27 @@ class DashboardFrame:
         total_conversations = stats.get('total_sessions', 0)
         self.conversation_count.config(text=str(total_conversations))
         
-        # TODO: Get vocabulary and other stats from database
-        # For now, using placeholder data from the design
+        # Get real vocabulary stats from database
+        try:
+            # Count total vocabulary words for the current language
+            vocab_query = "SELECT COUNT(*) FROM vocabulary WHERE language = ?"
+            vocab_count = self.session_manager.db.execute_query(vocab_query, (config.learning.target_language,))
+            total_vocab = vocab_count[0][0] if vocab_count else 0
+            
+            # Count mastered vocabulary (mastery_level >= 80%)
+            mastered_query = "SELECT COUNT(*) FROM vocabulary WHERE language = ? AND mastery_level >= 80"
+            mastered_count = self.session_manager.db.execute_query(mastered_query, (config.learning.target_language,))
+            mastered_vocab = mastered_count[0][0] if mastered_count else 0
+            
+            # Update vocabulary stats
+            self.words_count.config(text=str(total_vocab))
+            self.words_description.config(text=f"Total vocabulary for {config.learning.target_language.upper()}. {mastered_vocab} words mastered.")
+            
+        except Exception as e:
+            self.logger.error(f"Error loading vocabulary stats: {e}")
+            # Fallback to placeholder
+            self.words_count.config(text="0")
+            self.words_description.config(text="Vocabulary data unavailable")
     
     def update_data(self, data: Dict[str, Any]):
         """Update dashboard with new data."""
@@ -451,3 +356,8 @@ class DashboardFrame:
     def grid_forget(self):
         """Hide the dashboard frame."""
         return self.frame.grid_forget()
+    
+    def on_tab_activated(self):
+        """Called when this tab is activated."""
+        # Refresh dashboard data
+        self.refresh_data()

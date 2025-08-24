@@ -140,6 +140,12 @@ class EventTypes:
     NAVIGATE_TO_DASHBOARD = "navigate_to_dashboard"
     NAVIGATE_TO_CONVERSATION = "navigate_to_conversation"
     NAVIGATE_TO_SETTINGS = "navigate_to_settings"
+    NAVIGATE_TO_HOME = "navigate_to_home"
+    NAVIGATE_TO_VOCAB = "navigate_to_vocab"
+    NAVIGATE_TO_MEDIA = "navigate_to_media"
+    NAVIGATE_TO_GRAMMAR = "navigate_to_grammar"
+    NAVIGATE_TO_NOTES = "navigate_to_notes"
+    NAVIGATE_TO_TAB = "navigate_to_tab"
     
     # Session events
     SESSION_STARTED = "session_started"
@@ -179,6 +185,7 @@ class EventTypes:
     VOCABULARY_REVIEWED = "vocabulary_reviewed"
     QUIZ_COMPLETED = "quiz_completed"
     PROGRESS_UPDATED = "progress_updated"
+    LANGUAGE_CHANGED = "language_changed"
     
     # System events
     APPLICATION_STARTED = "application_started"

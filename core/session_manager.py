@@ -14,6 +14,8 @@ from dataclasses import dataclass, asdict
 from utils.logger import get_logger, LoggerMixin
 from data.database import DatabaseManager
 from core.event_bus import EventBus, EventTypes
+from core.note_generator import NoteGenerator
+from config import config
 
 
 @dataclass
@@ -69,6 +71,10 @@ class SessionManager(LoggerMixin):
         self.total_duration = 0
         self.average_engagement = 0.0
         
+        # Note generation
+        self.note_generator = NoteGenerator(db_manager)
+        self.conversation_messages: List[Dict[str, Any]] = []
+        
         self.logger.info("SessionManager initialized")
     
     def start_session(self, mode: str = "conversation") -> str:
@@ -114,6 +120,9 @@ class SessionManager(LoggerMixin):
             # Update database
             self._update_session_in_db(self.current_session)
             
+            # Generate notes from conversation
+            self._generate_session_notes()
+            
             # Add to history
             self.session_history.append(self.current_session)
             
@@ -126,6 +135,9 @@ class SessionManager(LoggerMixin):
             
             session_id = self.current_session.session_id
             self.current_session = None
+            
+            # Clear conversation messages for next session
+            self.conversation_messages = []
             
             self.logger.info(f"Ended session: {session_id} (duration: {session_data['duration_seconds']}s)")
             return session_id
@@ -175,6 +187,18 @@ class SessionManager(LoggerMixin):
             if word not in self.current_session.vocab_practiced:
                 self.current_session.vocab_practiced.append(word)
                 self._update_session_in_db(self.current_session)
+    
+    def add_conversation_message(self, sender: str, text: str, message_type: str = "text") -> None:
+        """Add a conversation message for note generation."""
+        if self.current_session and self.current_session.is_active:
+            message = {
+                "sender": sender,
+                "text": text,
+                "type": message_type,
+                "timestamp": datetime.now().isoformat()
+            }
+            self.conversation_messages.append(message)
+            self.logger.debug(f"Added conversation message from {sender}")
     
     def add_new_vocabulary(self, word: str) -> None:
         """Add a new word to the learned vocabulary list."""
@@ -384,6 +408,36 @@ class SessionManager(LoggerMixin):
             self.logger.error(f"Failed to load session from database: {e}", exc_info=True)
         
         return None
+    
+    def _generate_session_notes(self):
+        """Generate notes from the current session's conversation."""
+        if not self.conversation_messages or not self.current_session:
+            return
+        
+        try:
+            # Calculate duration in minutes
+            duration_minutes = self.current_session.duration_seconds / 60.0
+            
+            # Analyze conversation
+            analysis = self.note_generator.analyze_conversation(
+                session_id=self.current_session.session_id,
+                messages=self.conversation_messages,
+                language=config.learning.target_language
+            )
+            
+            # Set the duration
+            analysis.duration_minutes = duration_minutes
+            
+            # Generate notes
+            notes = self.note_generator.generate_notes(analysis)
+            
+            # Save notes to database
+            self.note_generator.save_notes(notes)
+            
+            self.logger.info(f"Generated {len(notes)} notes for session {self.current_session.session_id}")
+            
+        except Exception as e:
+            self.logger.error(f"Error generating session notes: {e}")
     
     def _update_statistics(self) -> None:
         """Update session statistics."""

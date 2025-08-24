@@ -132,3 +132,50 @@ class Settings:
     type: str = "string"
     description: Optional[str] = None
     updated_at: Optional[datetime] = None
+
+
+@dataclass
+class ConversationMessage:
+    """Individual conversation message model."""
+    id: int
+    session_id: str
+    timestamp: datetime
+    sender: str  # "user" or "ai"
+    message_type: str  # "text", "audio", "correction", etc.
+    content: str
+    language: str
+    confidence_score: Optional[float] = None
+    processing_time_ms: Optional[int] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+
+@dataclass
+class GrammarTopic:
+    """Grammar topic model."""
+    id: int
+    topic: str
+    language: str
+    difficulty_level: int = 1
+    description: Optional[str] = None
+    examples: Optional[List[str]] = None
+    rules: Optional[List[str]] = None
+    user_struggles: Optional[List[str]] = None
+    mastery_score: float = 0.0
+    last_practiced: Optional[datetime] = None
+    next_review: Optional[datetime] = None
+    notes: Optional[str] = None
+
+
+@dataclass
+class UserNote:
+    """User note model."""
+    id: int
+    title: str
+    content: str
+    category: str  # "general", "grammar", "vocabulary", "pronunciation", etc.
+    language: str
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    tags: Optional[List[str]] = None
+    priority: int = 1  # 1=low, 2=medium, 3=high
+    archived: bool = False

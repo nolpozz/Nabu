@@ -60,12 +60,20 @@ class MigrationManager:
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER,
                     session_type TEXT NOT NULL,
-                    start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    end_time TIMESTAMP,
+                    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    ended_at TIMESTAMP,
                     duration_seconds INTEGER,
                     words_learned INTEGER DEFAULT 0,
                     accuracy_percentage REAL DEFAULT 0.0,
                     notes TEXT,
+                    mode TEXT DEFAULT 'conversation',
+                    summary TEXT,
+                    vocab_practiced TEXT,
+                    new_vocab_learned TEXT,
+                    corrections_made TEXT,
+                    engagement_score REAL DEFAULT 0.0,
+                    difficulty_level REAL DEFAULT 1.0,
+                    archived BOOLEAN DEFAULT 0,
                     FOREIGN KEY (user_id) REFERENCES user_profile (id)
                 )
             """)
@@ -137,6 +145,52 @@ class MigrationManager:
                 )
             """)
             
+            # Add unique constraint to prevent duplicate notes
+            cursor.execute("""
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_user_notes_unique ON user_notes(title, content)
+            """)
+            
+            # Add missing columns to learning_sessions table if they don't exist
+            try:
+                cursor.execute("ALTER TABLE learning_sessions ADD COLUMN mode TEXT DEFAULT 'conversation'")
+            except:
+                pass  # Column already exists
+                
+            try:
+                cursor.execute("ALTER TABLE learning_sessions ADD COLUMN summary TEXT")
+            except:
+                pass  # Column already exists
+                
+            try:
+                cursor.execute("ALTER TABLE learning_sessions ADD COLUMN vocab_practiced TEXT")
+            except:
+                pass  # Column already exists
+                
+            try:
+                cursor.execute("ALTER TABLE learning_sessions ADD COLUMN new_vocab_learned TEXT")
+            except:
+                pass  # Column already exists
+                
+            try:
+                cursor.execute("ALTER TABLE learning_sessions ADD COLUMN corrections_made TEXT")
+            except:
+                pass  # Column already exists
+                
+            try:
+                cursor.execute("ALTER TABLE learning_sessions ADD COLUMN engagement_score REAL DEFAULT 0.0")
+            except:
+                pass  # Column already exists
+                
+            try:
+                cursor.execute("ALTER TABLE learning_sessions ADD COLUMN difficulty_level REAL DEFAULT 1.0")
+            except:
+                pass  # Column already exists
+                
+            try:
+                cursor.execute("ALTER TABLE learning_sessions ADD COLUMN archived BOOLEAN DEFAULT 0")
+            except:
+                pass  # Column already exists
+            
             # Assessment results table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS assessment_results (
@@ -148,6 +202,61 @@ class MigrationManager:
                     correct_answers INTEGER,
                     completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES user_profile (id)
+                )
+            """)
+            
+            # Conversation messages table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS conversation_messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT NOT NULL,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    sender TEXT NOT NULL,
+                    message_type TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    language TEXT NOT NULL,
+                    confidence_score REAL,
+                    processing_time_ms INTEGER,
+                    metadata TEXT
+                )
+            """)
+            
+            # Grammar topics table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS grammar_topics (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    topic TEXT NOT NULL,
+                    language TEXT NOT NULL,
+                    difficulty_level INTEGER DEFAULT 1,
+                    description TEXT,
+                    examples TEXT,
+                    rules TEXT,
+                    user_struggles TEXT,
+                    mastery_score REAL DEFAULT 0.0,
+                    last_practiced TIMESTAMP,
+                    next_review TIMESTAMP,
+                    notes TEXT
+                )
+            """)
+            
+            # Media recommendations table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS media_recommendations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    type TEXT NOT NULL,
+                    language TEXT NOT NULL,
+                    difficulty_level INTEGER,
+                    duration_minutes INTEGER,
+                    url TEXT,
+                    description TEXT,
+                    tags TEXT,
+                    recommended_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    consumed_at TIMESTAMP,
+                    user_rating INTEGER,
+                    completion_percentage REAL DEFAULT 0.0,
+                    notes TEXT,
+                    source TEXT
                 )
             """)
             
@@ -267,6 +376,75 @@ class MigrationManager:
                     self.logger.warning("Skipping sample learning_sessions insert due to schema mismatch (no usable columns)")
             except Exception as e:
                 self.logger.warning(f"Skipping sample learning_sessions insert due to schema mismatch: {e}")
+            
+            # Insert sample user notes
+            try:
+                cursor.execute("PRAGMA table_info(user_notes)")
+                notes_cols = {row[1] for row in cursor.fetchall()}
+                if {'title', 'content'}.issubset(notes_cols):
+                    sample_notes = [
+                        ("Russian Grammar Notes", "Remember that Russian has 6 cases: nominative, genitive, dative, accusative, instrumental, and prepositional.", "grammar"),
+                        ("Vocabulary Practice", "Practice common greetings and introductions in Russian.", "vocabulary"),
+                        ("Pronunciation Tips", "Focus on the rolling 'r' sound and stress patterns in Russian words.", "pronunciation")
+                    ]
+                    for title, content, category in sample_notes:
+                        cursor.execute(
+                            """
+                            INSERT OR IGNORE INTO user_notes (title, content, tags)
+                            VALUES (?, ?, ?)
+                            """,
+                            (title, content, category),
+                        )
+                else:
+                    self.logger.warning("Skipping sample user_notes insert due to schema mismatch")
+            except Exception as e:
+                self.logger.warning(f"Skipping sample user_notes insert due to schema mismatch: {e}")
+            
+            # Insert sample grammar topics
+            try:
+                cursor.execute("PRAGMA table_info(grammar_topics)")
+                grammar_cols = {row[1] for row in cursor.fetchall()}
+                if {'topic', 'language'}.issubset(grammar_cols):
+                    sample_topics = [
+                        ("Russian Cases", "Russian", 2, "Understanding the 6 grammatical cases in Russian"),
+                        ("Verb Conjugation", "Russian", 1, "Present tense verb conjugation patterns"),
+                        ("Gender Agreement", "Russian", 1, "Noun and adjective gender agreement")
+                    ]
+                    for topic, language, level, description in sample_topics:
+                        cursor.execute(
+                            """
+                            INSERT OR IGNORE INTO grammar_topics (topic, language, difficulty_level, description)
+                            VALUES (?, ?, ?, ?)
+                            """,
+                            (topic, language, level, description),
+                        )
+                else:
+                    self.logger.warning("Skipping sample grammar_topics insert due to schema mismatch")
+            except Exception as e:
+                self.logger.warning(f"Skipping sample grammar_topics insert due to schema mismatch: {e}")
+            
+            # Insert sample media recommendations
+            try:
+                cursor.execute("PRAGMA table_info(media_recommendations)")
+                media_cols = {row[1] for row in cursor.fetchall()}
+                if {'title', 'type', 'language'}.issubset(media_cols):
+                    sample_media = [
+                        ("Russian Folk Songs", "music", "Russian", 1, 30, "Traditional Russian folk music for beginners"),
+                        ("Soviet Era Films", "movie", "Russian", 2, 120, "Classic Soviet cinema for intermediate learners"),
+                        ("Russian News Podcast", "podcast", "Russian", 2, 45, "Daily news in simple Russian")
+                    ]
+                    for title, type_, language, level, duration, description in sample_media:
+                        cursor.execute(
+                            """
+                            INSERT OR IGNORE INTO media_recommendations (title, type, language, difficulty_level, duration_minutes, description)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                            """,
+                            (title, type_, language, level, duration, description),
+                        )
+                else:
+                    self.logger.warning("Skipping sample media_recommendations insert due to schema mismatch")
+            except Exception as e:
+                self.logger.warning(f"Skipping sample media_recommendations insert due to schema mismatch: {e}")
             
             conn.commit()
             self.logger.info("Sample data inserted successfully")

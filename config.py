@@ -20,18 +20,18 @@ class AudioConfig:
     sample_rate: int = 16000
     chunk_size: int = 1024
     channels: int = 1
-    silence_threshold: float = 1.5  # Original working value
-    min_speech_duration: float = 0.5  # Original working value
-    rms_threshold: int = 10
-    zcr_threshold: float = 0.001
+    silence_threshold: float = 3.0  # Further increased to reduce false triggers
+    min_speech_duration: float = 1.2  # Increased to require longer speech
+    rms_threshold: int = 35  # Increased to require louder audio
+    zcr_threshold: float = 0.003  # Increased to reduce noise triggers
     debug_audio: bool = True
 
 
 @dataclass
 class UIConfig:
     """UI system configuration."""
-    window_width: int = 1200
-    window_height: int = 800
+    window_width: int = 1400
+    window_height: int = 900
     theme: str = "dark"
     font_family: str = "SF Pro Display"
     font_size_base: int = 15
@@ -70,6 +70,9 @@ class LearningConfig:
     difficulty_adjustment_rate: float = 0.1
     engagement_threshold: float = 0.7
     session_timeout_minutes: int = 30
+    target_language: str = "en"  # Language being practiced (ISO 639-1 code)
+    native_language: str = "en"  # User's native language (ISO 639-1 code)
+    test_mode: bool = False  # Test mode - conversations not logged to database
 
 
 @dataclass
@@ -247,6 +250,8 @@ class Config:
                 'srs_enabled': self.learning.srs_enabled,
                 'max_active_vocab': self.learning.max_active_vocab,
                 'difficulty_adjustment_rate': self.learning.difficulty_adjustment_rate,
+                'target_language': self.learning.target_language,
+                'native_language': self.learning.native_language,
             }
         }
         
@@ -263,6 +268,16 @@ class Config:
     def get_log_path(self) -> Path:
         """Get the log file path."""
         return self.logs_dir / "tutor.log"
+    
+    def set_target_language(self, language_code: str) -> None:
+        """Set the target language for learning."""
+        self.learning.target_language = language_code
+        self.save_user_settings()
+    
+    def set_native_language(self, language_code: str) -> None:
+        """Set the user's native language."""
+        self.learning.native_language = language_code
+        self.save_user_settings()
     
     def validate(self) -> bool:
         """Validate the configuration."""
