@@ -1,4 +1,4 @@
-# Lumo AI Language Tutor
+# Nabu AI Language Tutor
 
 A sophisticated desktop AI language tutor application built with Python and Tkinter, featuring voice interaction, intelligent conversation, and personalized learning.
 
