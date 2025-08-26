@@ -13,7 +13,7 @@ from utils.logger import get_logger
 from core.event_bus import EventBus, EventTypes
 from core.session_manager import SessionManager
 from audio.voice_loop import VoiceLoop
-from agent.orchestrator import AgentOrchestrator
+
 from data.database import DatabaseManager
 from ui.theme import DarkTheme
 from ui.tab_manager import TabManager
@@ -35,11 +35,9 @@ class TutorApplication:
         
         # Initialize audio and agent components first
         self.voice_loop: Optional[VoiceLoop] = None
-        self.agent_orchestrator: Optional[AgentOrchestrator] = None
         
         # Initialize audio components before UI
         self._initialize_audio_components()
-        self._initialize_ai_agent()
         
         # Initialize UI (which needs the audio components)
         self._initialize_ui()
@@ -122,17 +120,7 @@ class TutorApplication:
             # Continue without audio functionality
             self.voice_loop = None
     
-    def _initialize_ai_agent(self):
-        """Initialize AI agent components."""
-        self.logger.info("Initializing AI agent")
-        
-        try:
-            self.agent_orchestrator = AgentOrchestrator(self.event_bus, self.session_manager, self.db_manager)
-            self.logger.info("AI agent initialized successfully")
-        except Exception as e:
-            self.logger.error(f"Failed to initialize AI agent: {e}")
-            # Continue without AI agent functionality
-            self.agent_orchestrator = None
+
     
     def _setup_event_handlers(self):
         """Setup event handlers for navigation and application lifecycle."""

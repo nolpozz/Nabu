@@ -350,6 +350,9 @@ class VoiceLoop:
                 user_context = self._get_user_learning_context()
                 vocab_context = self._get_recent_vocabulary_context()
                 
+                # Check if user needs specific information and use tools
+                tool_context = self._get_tool_context(user_text, user_context)
+                
                 # Prepare vocabulary context for the AI
                 all_vocab = vocab_context.get('all_vocabulary', {})
                 vocab_words = all_vocab.get('words', [])
@@ -377,6 +380,8 @@ LEARNING CONTEXT:
 
 VOCABULARY CONTEXT:
 {vocab_context_str}
+
+{tool_context}
 
 TEACHING APPROACH:
 - Respond primarily in {self._get_language_name(target_lang)} with occasional {self._get_language_name(native_lang)} explanations when needed
@@ -710,6 +715,176 @@ Remember: You are a supportive, patient tutor focused on building confidence and
             
         except Exception as e:
             self.logger.error(f"Error logging conversation message: {e}")
+    
+    def _get_tool_context(self, user_text: str, user_context: Dict[str, Any]) -> str:
+        """Get additional context from tools based on user input."""
+        tool_context = ""
+        
+        try:
+            # Check if user is asking about specific vocabulary
+            if self._needs_vocabulary_lookup(user_text):
+                vocab_data = self._vocabulary_lookup_tool(user_text)
+                if vocab_data:
+                    tool_context += f"\nVOCABULARY LOOKUP: {vocab_data}\n"
+            
+            # Check if user is asking for media recommendations
+            if self._needs_media_recommendation(user_text):
+                media_data = self._media_recommendation_tool(user_text, user_context)
+                if media_data:
+                    tool_context += f"\nMEDIA RECOMMENDATIONS: {media_data}\n"
+            
+            # Check if user is asking for grammar help
+            if self._needs_grammar_help(user_text):
+                grammar_data = self._grammar_help_tool(user_text)
+                if grammar_data:
+                    tool_context += f"\nGRAMMAR HELP: {grammar_data}\n"
+                    
+        except Exception as e:
+            self.logger.error(f"Error getting tool context: {e}")
+        
+        return tool_context
+    
+    def _needs_vocabulary_lookup(self, user_text: str) -> bool:
+        """Check if user is asking about specific vocabulary."""
+        vocab_keywords = [
+            'word', 'vocabulary', 'meaning', 'translate', 'translation', 
+            'what does', 'how do you say', 'what is the word for',
+            'palabra', 'vocabulario', 'significado', 'traducir',  # Spanish
+            'mot', 'vocabulaire', 'signification', 'traduire',    # French
+            'wort', 'vokabular', 'bedeutung', 'übersetzen'       # German
+        ]
+        user_lower = user_text.lower()
+        return any(keyword in user_lower for keyword in vocab_keywords)
+    
+    def _needs_media_recommendation(self, user_text: str) -> bool:
+        """Check if user is asking for media recommendations."""
+        media_keywords = [
+            'movie', 'film', 'song', 'music', 'video', 'media', 'practice',
+            'recommend', 'suggestion', 'watch', 'listen', 'learn',
+            'película', 'canción', 'música', 'video', 'recomendar',  # Spanish
+            'film', 'chanson', 'musique', 'vidéo', 'recommander',    # French
+            'film', 'lied', 'musik', 'video', 'empfehlen'           # German
+        ]
+        user_lower = user_text.lower()
+        return any(keyword in user_lower for keyword in media_keywords)
+    
+    def _needs_grammar_help(self, user_text: str) -> bool:
+        """Check if user is asking for grammar help."""
+        grammar_keywords = [
+            'grammar', 'sentence', 'structure', 'conjugation', 'tense',
+            'grammatical', 'correct', 'incorrect', 'mistake', 'error',
+            'gramática', 'oración', 'estructura', 'conjugación',     # Spanish
+            'grammaire', 'phrase', 'structure', 'conjugaison',       # French
+            'grammatik', 'satz', 'struktur', 'konjugation'          # German
+        ]
+        user_lower = user_text.lower()
+        return any(keyword in user_lower for keyword in grammar_keywords)
+    
+    def _vocabulary_lookup_tool(self, user_text: str) -> str:
+        """Look up specific vocabulary word from user's database."""
+        try:
+            import re
+            
+            # Extract potential words from user text
+            language = config.learning.target_language
+            if language == 'ru':
+                pattern = r'\b[а-яё]+\b'
+            elif language == 'es':
+                pattern = r'\b[a-záéíóúñü]+\b'
+            elif language == 'fr':
+                pattern = r'\b[a-zàâäéèêëïîôöùûüÿç]+\b'
+            elif language == 'de':
+                pattern = r'\b[a-zäöüß]+\b'
+            else:
+                pattern = r'\b[a-z]+\b'
+            
+            words = re.findall(pattern, user_text.lower())
+            
+            if not words:
+                return ""
+            
+            # Look up the first word found
+            word = words[0]
+            query = """
+                SELECT word, translation, mastery_level, times_seen, times_used 
+                FROM vocabulary 
+                WHERE word = ? AND language = ?
+            """
+            result = self.db_manager.execute_query(query, (word, language))
+            
+            if result:
+                word_data = result[0]
+                return f"Word: {word_data[0]}, Translation: {word_data[1]}, Mastery: {word_data[2]:.1%}, Seen: {word_data[3]}x, Used: {word_data[4]}x"
+            else:
+                return f"Word '{word}' not found in your vocabulary. Consider adding it!"
+                
+        except Exception as e:
+            self.logger.error(f"Error in vocabulary lookup tool: {e}")
+            return ""
+    
+    def _media_recommendation_tool(self, user_text: str, user_context: Dict[str, Any]) -> str:
+        """Get media recommendations based on user's level and interests."""
+        try:
+            # Determine user's proficiency level for recommendations
+            proficiency = user_context.get('proficiency_level', 'Beginner')
+            level_mapping = {
+                'Beginner': 1,
+                'Intermediate': 2,
+                'Advanced': 3
+            }
+            user_level = level_mapping.get(proficiency, 1)
+            
+            # Get media recommendations
+            query = """
+                SELECT title, type, difficulty_level, duration_minutes, description
+                FROM media_recommendations 
+                WHERE language = ? AND difficulty_level <= ?
+                ORDER BY difficulty_level ASC, RANDOM()
+                LIMIT 3
+            """
+            result = self.db_manager.execute_query(query, (config.learning.target_language, user_level))
+            
+            if result:
+                recommendations = []
+                for row in result:
+                    title, media_type, level, duration, description = row
+                    recommendations.append(f"{title} ({media_type}, {duration}min, level {level})")
+                
+                return f"Recommended for you: {'; '.join(recommendations)}"
+            else:
+                return "No media recommendations available for your level yet."
+                
+        except Exception as e:
+            self.logger.error(f"Error in media recommendation tool: {e}")
+            return ""
+    
+    def _grammar_help_tool(self, user_text: str) -> str:
+        """Provide grammar help based on user's question."""
+        try:
+            # Simple grammar help based on keywords
+            grammar_topics = {
+                'conjugation': 'Focus on verb conjugations in present tense first, then past and future.',
+                'tense': 'Start with present tense, then learn past tense, and finally future tense.',
+                'sentence': 'Basic sentence structure: Subject + Verb + Object. Add adjectives before nouns.',
+                'structure': 'Word order is important. In most cases: Subject comes first, verb second.',
+                'grammar': 'Practice with simple sentences first, then gradually add complexity.',
+                'conjugación': 'Enfócate en las conjugaciones de verbos en tiempo presente primero.',
+                'tiempo': 'Comienza con el tiempo presente, luego aprende el pasado y finalmente el futuro.',
+                'oración': 'Estructura básica: Sujeto + Verbo + Objeto. Los adjetivos van antes de los sustantivos.',
+                'conjugaison': 'Concentrez-vous d\'abord sur les conjugaisons au présent.',
+                'temps': 'Commencez par le présent, puis apprenez le passé et enfin le futur.'
+            }
+            
+            user_lower = user_text.lower()
+            for topic, help_text in grammar_topics.items():
+                if topic in user_lower:
+                    return help_text
+            
+            return "For grammar help, try asking about specific topics like 'conjugation', 'tense', or 'sentence structure'."
+            
+        except Exception as e:
+            self.logger.error(f"Error in grammar help tool: {e}")
+            return ""
     
     def _extract_and_add_vocabulary(self, text: str):
         """Extract vocabulary words from text and add to session."""

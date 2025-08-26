@@ -63,6 +63,14 @@ This allows the AI to:
 - Provide appropriate translations when introducing new words
 - Adapt conversation difficulty based on vocabulary mastery levels
 
+**Tool Integration:**
+The AI model now has access to dynamic tools that provide additional context based on user input:
+- **Vocabulary Lookup Tool**: Searches user's vocabulary database for specific words
+- **Media Recommendation Tool**: Suggests learning media based on user's level
+- **Grammar Help Tool**: Provides targeted grammar assistance
+
+Tools are automatically triggered based on keyword detection in user input, providing relevant information without requiring complex orchestration.
+
 ## 2. Conversation Analysis AI Prompt
 
 **Location:** `core/note_generator.py` (lines 200-250)
