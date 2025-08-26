@@ -42,9 +42,10 @@ class AudioConfig:
 class VoiceLoop:
     """Handles audio capture, processing, and playback."""
     
-    def __init__(self, event_bus: EventBus):
+    def __init__(self, event_bus: EventBus, session_manager=None):
         self.logger = get_logger(__name__)
         self.event_bus = event_bus
+        self.session_manager = session_manager
         
         # Audio configuration - balanced for responsiveness and accuracy
         self.config = AudioConfig(
@@ -206,8 +207,8 @@ class VoiceLoop:
             zero_crossing_rate = zero_crossings / len(audio_data)
             
             # Thresholds for speech detection (fine-tuned for better balance)
-            rms_threshold = 35  # Lowered to catch more speech while filtering noise
-            zcr_threshold = 0.08  # Lowered to be more sensitive to speech patterns
+            rms_threshold = 40  # Lowered to catch more speech while filtering noise
+            zcr_threshold = 0.03  # Lowered to be more sensitive to speech patterns
             # Check if audio meets speech criteria
             has_speech = rms > rms_threshold and zero_crossing_rate > zcr_threshold
             
@@ -303,6 +304,10 @@ class VoiceLoop:
                     if not config.learning.test_mode:
                         self._log_conversation_message("user", "text", user_text, config.learning.target_language)
                     
+                    # Extract and add new vocabulary from user message
+                    if self.session_manager:
+                        self._extract_and_add_vocabulary(user_text)
+                    
                     # Publish user message event
                     self.event_bus.publish(EventTypes.USER_MESSAGE, {
                         "text": user_text,
@@ -339,12 +344,57 @@ class VoiceLoop:
             target_lang = config.learning.target_language
             native_lang = config.learning.native_language
             
-            # Create language-aware system prompt
+            # Create language-aware system prompt with learning context
             if target_lang != native_lang:
-                system_prompt = f"You are an AI language tutor helping someone learn {self._get_language_name(target_lang)}. " \
-                               f"The user's native language is {self._get_language_name(native_lang)}. " \
-                               f"Respond in {self._get_language_name(target_lang)} and keep responses short and conversational. " \
-                               f"Provide gentle corrections and encourage learning."
+                # Get user's learning context from database
+                user_context = self._get_user_learning_context()
+                vocab_context = self._get_recent_vocabulary_context()
+                
+                # Prepare vocabulary context for the AI
+                all_vocab = vocab_context.get('all_vocabulary', {})
+                vocab_words = all_vocab.get('words', [])
+                vocab_translations = all_vocab.get('translations', {})
+                mastery_levels = all_vocab.get('mastery_levels', {})
+                
+                # Create vocabulary context string
+                if vocab_words:
+                    vocab_context_str = f"Available vocabulary ({len(vocab_words)} words): "
+                    vocab_context_str += ", ".join([f"{word} ({vocab_translations.get(word, 'no translation')})" for word in vocab_words[:20]])  # Show first 20 words
+                    if len(vocab_words) > 20:
+                        vocab_context_str += f" ... and {len(vocab_words) - 20} more words"
+                else:
+                    vocab_context_str = "No vocabulary words learned yet"
+                
+                system_prompt = f"""You are Nabu, an advanced AI language tutor helping someone learn {self._get_language_name(target_lang)}. 
+
+LEARNING CONTEXT:
+- User's native language: {self._get_language_name(native_lang)}
+- Current proficiency level: {user_context.get('proficiency_level', 'Beginner')}
+- Learning style: {user_context.get('learning_style', 'Conversational')}
+- Recent vocabulary focus: {vocab_context.get('recent_words', 'General conversation')}
+- Areas of difficulty: {user_context.get('difficulties', 'None noted')}
+- Total vocabulary words: {vocab_context.get('vocab_count', 0)}
+
+VOCABULARY CONTEXT:
+{vocab_context_str}
+
+TEACHING APPROACH:
+- Respond primarily in {self._get_language_name(target_lang)} with occasional {self._get_language_name(native_lang)} explanations when needed
+- Keep responses conversational and engaging (2-3 sentences max)
+- Provide gentle, contextual corrections when appropriate
+- Adapt difficulty based on user's responses
+- Encourage active participation and questions
+- Use real-world examples and cultural context when relevant
+
+VOCABULARY INTEGRATION:
+- Naturally introduce words from the user's vocabulary list above
+- Prioritize words with lower mastery levels for reinforcement
+- Reinforce recently learned words through repetition
+- Provide context for new vocabulary usage
+- Use vocabulary appropriate to the user's current level
+- When introducing new words, provide brief translations in {self._get_language_name(native_lang)} if helpful
+
+Remember: You are a supportive, patient tutor focused on building confidence and practical language skills."""
             else:
                 system_prompt = "You are a helpful AI assistant. Keep responses short and conversational."
             
@@ -481,6 +531,127 @@ class VoiceLoop:
         }
         return language_names.get(lang_code, lang_code.upper())
     
+    def _get_user_learning_context(self) -> Dict[str, Any]:
+        """Get user's learning context from database."""
+        try:
+            # Get user profile information
+            user_query = "SELECT proficiency_level, learning_goals FROM user_profile LIMIT 1"
+            user_result = self.db_manager.execute_query(user_query)
+            
+            # Get recent session statistics
+            session_query = """
+                SELECT AVG(engagement_score) as avg_engagement, 
+                       AVG(difficulty_level) as avg_difficulty,
+                       COUNT(*) as total_sessions
+                FROM learning_sessions 
+                WHERE ended_at IS NOT NULL 
+                ORDER BY ended_at DESC LIMIT 10
+            """
+            session_result = self.db_manager.execute_query(session_query)
+            
+            # Get recent vocabulary usage patterns
+            vocab_query = """
+                SELECT word, times_used, mastery_level 
+                FROM vocabulary 
+                WHERE language = ? 
+                ORDER BY updated_at DESC LIMIT 5
+            """
+            vocab_result = self.db_manager.execute_query(vocab_query, (config.learning.target_language,))
+            
+            context = {
+                'proficiency_level': user_result[0][0] if user_result else 'Beginner',
+                'learning_style': 'Conversational',  # Default
+                'difficulties': 'None noted',  # Default
+                'avg_engagement': session_result[0][0] if session_result and session_result[0][0] else 0.5,
+                'avg_difficulty': session_result[0][1] if session_result and session_result[0][1] else 1.0,
+                'total_sessions': session_result[0][2] if session_result and session_result[0][2] else 0,
+                'recent_vocab': [row[0] for row in vocab_result] if vocab_result else []
+            }
+            
+            # Determine learning style based on engagement patterns
+            if context['avg_engagement'] > 0.7:
+                context['learning_style'] = 'Highly Engaged'
+            elif context['avg_engagement'] > 0.4:
+                context['learning_style'] = 'Moderately Engaged'
+            else:
+                context['learning_style'] = 'Needs Encouragement'
+            
+            return context
+            
+        except Exception as e:
+            self.logger.error(f"Error getting user learning context: {e}")
+            return {
+                'proficiency_level': 'Beginner',
+                'learning_style': 'Conversational',
+                'difficulties': 'None noted',
+                'avg_engagement': 0.5,
+                'avg_difficulty': 1.0,
+                'total_sessions': 0,
+                'recent_vocab': []
+            }
+    
+    def _get_recent_vocabulary_context(self) -> Dict[str, Any]:
+        """Get comprehensive vocabulary context for conversation."""
+        try:
+            # Get recently learned vocabulary
+            recent_query = """
+                SELECT word, translation, times_seen, mastery_level 
+                FROM vocabulary 
+                WHERE language = ? 
+                ORDER BY updated_at DESC LIMIT 10
+            """
+            recent_result = self.db_manager.execute_query(recent_query, (config.learning.target_language,))
+            
+            # Get vocabulary that needs reinforcement
+            reinforcement_query = """
+                SELECT word, translation 
+                FROM vocabulary 
+                WHERE language = ? AND mastery_level < 0.5 
+                ORDER BY RANDOM() LIMIT 5
+            """
+            reinforcement_result = self.db_manager.execute_query(reinforcement_query, (config.learning.target_language,))
+            
+            # Get ALL vocabulary words for the target language (for AI context)
+            all_vocab_query = """
+                SELECT word, translation, mastery_level, times_seen, times_used
+                FROM vocabulary 
+                WHERE language = ? 
+                ORDER BY mastery_level ASC, times_seen ASC
+            """
+            all_vocab_result = self.db_manager.execute_query(all_vocab_query, (config.learning.target_language,))
+            
+            # Create comprehensive vocabulary context
+            context = {
+                'recent_words': [row[0] for row in recent_result[:5]] if recent_result else [],
+                'recent_translations': {row[0]: row[1] for row in recent_result} if recent_result else {},
+                'needs_reinforcement': [row[0] for row in reinforcement_result] if reinforcement_result else [],
+                'vocab_count': len(all_vocab_result) if all_vocab_result else 0,
+                # Full vocabulary list for AI context
+                'all_vocabulary': {
+                    'words': [row[0] for row in all_vocab_result] if all_vocab_result else [],
+                    'translations': {row[0]: row[1] for row in all_vocab_result} if all_vocab_result else {},
+                    'mastery_levels': {row[0]: row[2] for row in all_vocab_result} if all_vocab_result else {},
+                    'usage_stats': {row[0]: {'seen': row[3], 'used': row[4]} for row in all_vocab_result} if all_vocab_result else {}
+                }
+            }
+            
+            return context
+            
+        except Exception as e:
+            self.logger.error(f"Error getting vocabulary context: {e}")
+            return {
+                'recent_words': [],
+                'recent_translations': {},
+                'needs_reinforcement': [],
+                'vocab_count': 0,
+                'all_vocabulary': {
+                    'words': [],
+                    'translations': {},
+                    'mastery_levels': {},
+                    'usage_stats': {}
+                }
+            }
+    
     def _get_voice_for_language(self, lang_code: str) -> str:
         """Get the best ElevenLabs voice ID for the target language."""
         # ElevenLabs voice IDs optimized for different languages
@@ -539,3 +710,52 @@ class VoiceLoop:
             
         except Exception as e:
             self.logger.error(f"Error logging conversation message: {e}")
+    
+    def _extract_and_add_vocabulary(self, text: str):
+        """Extract vocabulary words from text and add to session."""
+        try:
+            import re
+            
+            # Language-specific word extraction patterns
+            language = config.learning.target_language
+            if language == 'ru':
+                # Russian word pattern (Cyrillic characters)
+                pattern = r'\b[а-яё]+\b'
+            elif language == 'es':
+                # Spanish word pattern
+                pattern = r'\b[a-záéíóúñü]+\b'
+            elif language == 'fr':
+                # French word pattern
+                pattern = r'\b[a-zàâäéèêëïîôöùûüÿç]+\b'
+            elif language == 'de':
+                # German word pattern
+                pattern = r'\b[a-zäöüß]+\b'
+            else:
+                # Default: English-like pattern
+                pattern = r'\b[a-z]+\b'
+            
+            # Extract words
+            words = re.findall(pattern, text.lower())
+            
+            # Filter out common words and short words
+            common_words = {
+                'ru': {'и', 'в', 'не', 'на', 'я', 'быть', 'он', 'что', 'это', 'как'},
+                'es': {'el', 'la', 'de', 'que', 'y', 'a', 'en', 'un', 'es', 'se'},
+                'fr': {'le', 'la', 'de', 'et', 'à', 'un', 'être', 'etre', 'avoir', 'il'},
+                'de': {'der', 'die', 'das', 'und', 'in', 'den', 'von', 'zu', 'mit', 'sich'},
+                'en': {'the', 'and', 'to', 'of', 'a', 'in', 'is', 'it', 'you', 'that'}
+            }
+            
+            filtered_words = [
+                word for word in words 
+                if len(word) > 2 and word not in common_words.get(language, common_words['en'])
+            ]
+            
+            # Add unique words to session
+            for word in set(filtered_words):
+                if self.session_manager:
+                    self.session_manager.add_new_vocabulary(word)
+                    self.logger.debug(f"Added vocabulary word: {word}")
+                    
+        except Exception as e:
+            self.logger.error(f"Error extracting vocabulary: {e}")

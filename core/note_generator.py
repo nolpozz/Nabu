@@ -11,6 +11,7 @@ from dataclasses import dataclass
 
 from utils.logger import get_logger
 from data.database import DatabaseManager
+from core.event_bus import EventTypes
 from config import config
 
 
@@ -50,12 +51,13 @@ class GeneratedNote:
 class NoteGenerator:
     """Generates notes from conversation analysis."""
     
-    def __init__(self, db_manager: DatabaseManager):
+    def __init__(self, db_manager: DatabaseManager, event_bus=None):
         self.db = db_manager
+        self.event_bus = event_bus
         self.logger = get_logger(__name__)
     
     def analyze_conversation(self, session_id: str, messages: List[Dict[str, Any]], language: str) -> ConversationAnalysis:
-        """Analyze a conversation and extract insights."""
+        """Analyze a conversation using AI-powered analysis."""
         self.logger.info(f"Analyzing conversation for session: {session_id}")
         
         # Extract basic statistics
@@ -63,20 +65,23 @@ class NoteGenerator:
         user_messages = len([m for m in messages if m.get('sender') == 'user'])
         ai_messages = len([m for m in messages if m.get('sender') == 'ai'])
         
+        # Use AI to analyze the conversation
+        ai_analysis = self._ai_analyze_conversation(messages, language)
+        
         # Extract vocabulary and topics
         vocabulary_used = self._extract_vocabulary(messages, language)
-        topics_discussed = self._extract_topics(messages)
+        topics_discussed = ai_analysis.get('topics', self._extract_topics(messages))
         new_vocabulary = self._identify_new_vocabulary(vocabulary_used, language)
-        grammar_corrections = self._extract_grammar_corrections(messages)
-        pronunciation_notes = self._extract_pronunciation_notes(messages)
-        cultural_insights = self._extract_cultural_insights(messages)
+        grammar_corrections = ai_analysis.get('grammar_corrections', self._extract_grammar_corrections(messages))
+        pronunciation_notes = ai_analysis.get('pronunciation_notes', self._extract_pronunciation_notes(messages))
+        cultural_insights = ai_analysis.get('cultural_insights', self._extract_cultural_insights(messages))
         
         # Calculate learning progress
         learning_progress = self._calculate_learning_progress(messages, vocabulary_used)
         
         # Estimate difficulty and engagement
-        difficulty_level = self._estimate_difficulty_level(messages, vocabulary_used)
-        engagement_score = self._calculate_engagement_score(messages)
+        difficulty_level = ai_analysis.get('difficulty_level', self._estimate_difficulty_level(messages, vocabulary_used))
+        engagement_score = ai_analysis.get('engagement_score', self._calculate_engagement_score(messages))
         
         return ConversationAnalysis(
             session_id=session_id,
@@ -142,6 +147,14 @@ class NoteGenerator:
                     'archived': 0
                 })
                 self.logger.info(f"Saved note: {note.title}")
+                
+                # Notify UI to refresh notes tab
+                if self.event_bus:
+                    self.event_bus.publish(EventTypes.NOTES_UPDATED, {
+                        "note_title": note.title,
+                        "category": note.category,
+                        "language": note.language
+                    })
             except Exception as e:
                 self.logger.error(f"Error saving note {note.title}: {e}")
     
@@ -312,27 +325,215 @@ class NoteGenerator:
         }
         return common_words.get(language, common_words['en'])
     
+    def _ai_analyze_conversation(self, messages: List[Dict[str, Any]], language: str) -> Dict[str, Any]:
+        """Use AI to analyze conversation for insights."""
+        try:
+            from openai import OpenAI
+            from config import config
+            
+            # Prepare conversation text for analysis
+            conversation_text = ""
+            for message in messages:
+                sender = message.get('sender', 'unknown')
+                text = message.get('text', '')
+                conversation_text += f"{sender.upper()}: {text}\n"
+            
+            # Create AI analysis prompt
+            analysis_prompt = f"""You are an expert language learning analyst. Analyze this {language} conversation and provide insights in JSON format.
+
+CONVERSATION:
+{conversation_text}
+
+Please analyze and return a JSON object with the following structure:
+{{
+    "topics": ["topic1", "topic2"],
+    "grammar_corrections": [
+        {{
+            "original": "incorrect phrase",
+            "corrected": "correct phrase", 
+            "explanation": "brief explanation"
+        }}
+    ],
+    "pronunciation_notes": ["note1", "note2"],
+    "cultural_insights": ["insight1", "insight2"],
+    "difficulty_level": 1.5,
+    "engagement_score": 0.8,
+    "learning_style_observations": "brief observations about the learner's style",
+    "recommendations": ["recommendation1", "recommendation2"]
+}}
+
+Focus on:
+- Identifying key topics discussed
+- Grammar patterns that need attention
+- Pronunciation challenges
+- Cultural context and insights
+- Overall difficulty level (1.0-5.0)
+- Engagement level (0.0-1.0)
+- Personalized learning recommendations
+
+Return only valid JSON."""
+
+            # Call OpenAI API
+            client = OpenAI(api_key=config.openai_api_key)
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a language learning analyst. Return only valid JSON."},
+                    {"role": "user", "content": analysis_prompt}
+                ],
+                max_tokens=1000,
+                temperature=0.3
+            )
+            
+            # Parse JSON response
+            import json
+            analysis_text = response.choices[0].message.content.strip()
+            analysis = json.loads(analysis_text)
+            
+            return analysis
+            
+        except Exception as e:
+            self.logger.error(f"Error in AI conversation analysis: {e}")
+            # Fallback to basic analysis
+            return {
+                'topics': self._extract_topics(messages),
+                'grammar_corrections': self._extract_grammar_corrections(messages),
+                'pronunciation_notes': self._extract_pronunciation_notes(messages),
+                'cultural_insights': self._extract_cultural_insights(messages),
+                'difficulty_level': self._estimate_difficulty_level(messages, []),
+                'engagement_score': self._calculate_engagement_score(messages),
+                'learning_style_observations': 'Analysis unavailable',
+                'recommendations': ['Continue practicing regularly']
+            }
+    
     def _generate_vocabulary_note(self, analysis: ConversationAnalysis) -> GeneratedNote:
-        """Generate a vocabulary note."""
-        new_words = ', '.join(analysis.new_vocabulary[:5])
-        title = f"New {analysis.language.upper()} Vocabulary - Session {analysis.session_id[:8]}"
-        content = f"""In this conversation, you encountered {len(analysis.new_vocabulary)} new vocabulary words.
+        """Generate a vocabulary note using AI-powered content."""
+        try:
+            # Use AI to generate personalized vocabulary note
+            ai_content = self._ai_generate_vocabulary_note(analysis)
+            
+            title = f"New {analysis.language.upper()} Vocabulary - Session {analysis.session_id[:8]}"
+            
+            return GeneratedNote(
+                title=title,
+                content=ai_content,
+                category="Vocabulary",
+                priority=2,
+                tags=f"{analysis.language},vocabulary,new-words",
+                language=analysis.language,
+                session_id=analysis.session_id,
+                created_at=datetime.now()
+            )
+        except Exception as e:
+            self.logger.error(f"Error generating AI vocabulary note: {e}")
+            # Fallback to basic note
+            new_words = ', '.join(analysis.new_vocabulary[:5])
+            content = f"""In this conversation, you encountered {len(analysis.new_vocabulary)} new vocabulary words.
 
 New words to practice:
 {new_words}
 
 Try to use these words in your next conversation to reinforce your learning!"""
-        
-        return GeneratedNote(
-            title=title,
-            content=content,
-            category="Vocabulary",
-            priority=2,
-            tags=f"{analysis.language},vocabulary,new-words",
-            language=analysis.language,
-            session_id=analysis.session_id,
-            created_at=datetime.now()
-        )
+            
+            return GeneratedNote(
+                title=f"New {analysis.language.upper()} Vocabulary - Session {analysis.session_id[:8]}",
+                content=content,
+                category="Vocabulary",
+                priority=2,
+                tags=f"{analysis.language},vocabulary,new-words",
+                language=analysis.language,
+                session_id=analysis.session_id,
+                created_at=datetime.now()
+            )
+    
+    def _ai_generate_vocabulary_note(self, analysis: ConversationAnalysis) -> str:
+        """Use AI to generate personalized vocabulary note."""
+        try:
+            from openai import OpenAI
+            from config import config
+            
+            # Get user's learning context
+            user_context = self._get_user_learning_context(analysis.language)
+            
+            prompt = f"""You are an expert language tutor creating a personalized vocabulary note for a {analysis.language} learner.
+
+LEARNER CONTEXT:
+- Proficiency level: {user_context.get('proficiency_level', 'Beginner')}
+- Learning style: {user_context.get('learning_style', 'Conversational')}
+- Total vocabulary words: {user_context.get('vocab_count', 0)}
+
+NEW VOCABULARY FROM THIS SESSION:
+{', '.join(analysis.new_vocabulary[:10])}
+
+CONVERSATION TOPICS:
+{', '.join(analysis.topics_discussed) if analysis.topics_discussed else 'Various topics'}
+
+Create a personalized, encouraging vocabulary note that:
+1. Celebrates the new words learned
+2. Provides context for when to use each word
+3. Includes memory tips or mnemonics
+4. Suggests practice activities
+5. Motivates continued learning
+
+Keep it friendly, encouraging, and practical. Format it nicely with clear sections."""
+            
+            client = OpenAI(api_key=config.openai_api_key)
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a supportive language tutor creating personalized learning notes."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=500,
+                temperature=0.7
+            )
+            
+            return response.choices[0].message.content.strip()
+            
+        except Exception as e:
+            self.logger.error(f"Error in AI vocabulary note generation: {e}")
+            # Fallback content
+            new_words = ', '.join(analysis.new_vocabulary[:5])
+            return f"""Great job! You learned {len(analysis.new_vocabulary)} new vocabulary words in this session.
+
+New words to practice:
+{new_words}
+
+Try to use these words in your next conversation to reinforce your learning!"""
+    
+    def _get_user_learning_context(self, language: str = None) -> Dict[str, Any]:
+        """Get user's learning context for AI note generation."""
+        try:
+            # Use provided language or default to target language
+            target_lang = language or config.learning.target_language
+            
+            # Get basic user stats
+            vocab_query = "SELECT COUNT(*) FROM vocabulary WHERE language = ?"
+            vocab_count = self.db.execute_query(vocab_query, (target_lang,))
+            
+            session_query = """
+                SELECT AVG(engagement_score), COUNT(*) 
+                FROM learning_sessions 
+                WHERE ended_at IS NOT NULL
+            """
+            session_result = self.db.execute_query(session_query)
+            
+            return {
+                'proficiency_level': 'Intermediate' if vocab_count[0][0] > 50 else 'Beginner',
+                'learning_style': 'Conversational',
+                'vocab_count': vocab_count[0][0] if vocab_count else 0,
+                'avg_engagement': session_result[0][0] if session_result and session_result[0][0] else 0.5,
+                'total_sessions': session_result[0][1] if session_result and session_result[0][1] else 0
+            }
+        except Exception as e:
+            self.logger.error(f"Error getting user learning context: {e}")
+            return {
+                'proficiency_level': 'Beginner',
+                'learning_style': 'Conversational',
+                'vocab_count': 0,
+                'avg_engagement': 0.5,
+                'total_sessions': 0
+            }
     
     def _generate_grammar_note(self, analysis: ConversationAnalysis) -> GeneratedNote:
         """Generate a grammar note."""

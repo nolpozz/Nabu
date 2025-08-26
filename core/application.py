@@ -115,7 +115,7 @@ class TutorApplication:
         self.logger.info("Initializing audio components")
         
         try:
-            self.voice_loop = VoiceLoop(self.event_bus)
+            self.voice_loop = VoiceLoop(self.event_bus, self.session_manager)
             self.logger.info("Audio components initialized successfully")
         except Exception as e:
             self.logger.error(f"Failed to initialize audio components: {e}")

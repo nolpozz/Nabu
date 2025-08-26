@@ -39,6 +39,8 @@ class VocabTab:
         
         # Subscribe to language change events
         self.event_bus.subscribe(EventTypes.LANGUAGE_CHANGED, self._on_language_changed)
+        # Subscribe to vocabulary update events
+        self.event_bus.subscribe(EventTypes.VOCABULARY_UPDATED, self._on_vocabulary_updated)
     
     def on_tab_activated(self):
         """Called when this tab is activated."""
@@ -403,6 +405,11 @@ class VocabTab:
     
     def _on_vocab_reviewed(self, data: Dict[str, Any]):
         """Handle vocabulary reviewed event."""
+        self._load_vocabulary()
+    
+    def _on_vocabulary_updated(self, data: Dict[str, Any]):
+        """Handle vocabulary updated event."""
+        self.logger.info(f"Vocabulary updated: {data.get('word', 'unknown')}")
         self._load_vocabulary()
     
     def on_tab_activated(self):

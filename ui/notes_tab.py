@@ -38,6 +38,8 @@ class NotesTab:
         
         # Subscribe to language change events
         self.event_bus.subscribe(EventTypes.LANGUAGE_CHANGED, self._on_language_changed)
+        # Subscribe to notes update events
+        self.event_bus.subscribe(EventTypes.NOTES_UPDATED, self._on_notes_updated)
     
     def on_tab_activated(self):
         """Called when this tab is activated."""
@@ -639,6 +641,11 @@ class NotesTab:
     
     def on_tab_activated(self):
         """Called when this tab is activated."""
+        self._load_notes()
+    
+    def _on_notes_updated(self, data: Dict[str, Any]):
+        """Handle notes updated event."""
+        self.logger.info(f"Notes updated: {data.get('note_title', 'unknown')}")
         self._load_notes()
     
     def refresh_data(self):

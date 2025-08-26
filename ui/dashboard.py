@@ -243,7 +243,7 @@ class DashboardFrame:
         self.avg_words_text.pack(side=tk.LEFT, padx=(5, 0))
         
         # Start Conversation button
-        self.start_button.pack(pady=(0, 40))
+        self.start_button.pack(pady=(0, 20))
         
         # Add hover effects to button
         self.start_button.bind('<Enter>', lambda e: self.start_button.configure(
@@ -257,6 +257,30 @@ class DashboardFrame:
         ))
         self.start_button.bind('<ButtonRelease-1>', lambda e: self.start_button.configure(
             bg=self._lighten_color(self.theme.ACCENT_BLUE, 0.2)
+        ))
+        
+        # Reset Data button
+        self.reset_button = tk.Button(
+            self.main_content,
+            text="🗑️ Reset All Data",
+            bg=self.theme.ACCENT_RED,
+            fg=self.theme.TEXT_PRIMARY,
+            font=(self.theme.FONT_FAMILY_PRIMARY[0], 12),
+            relief='flat',
+            bd=0,
+            padx=20,
+            pady=8,
+            cursor='hand2',
+            command=self._reset_all_data
+        )
+        self.reset_button.pack(pady=(0, 40))
+        
+        # Add hover effects to reset button
+        self.reset_button.bind('<Enter>', lambda e: self.reset_button.configure(
+            bg=self._lighten_color(self.theme.ACCENT_RED, 0.2)
+        ))
+        self.reset_button.bind('<Leave>', lambda e: self.reset_button.configure(
+            bg=self.theme.ACCENT_RED
         ))
     
     def _lighten_color(self, color: str, factor: float) -> str:
@@ -296,6 +320,48 @@ class DashboardFrame:
         
         # Navigate to conversation
         self.event_bus.publish(EventTypes.NAVIGATE_TO_CONVERSATION)
+    
+    def _reset_all_data(self):
+        """Reset all vocabulary and notes data."""
+        self.logger.info("Resetting all data")
+        
+        try:
+            # Clear vocabulary table
+            self.session_manager.db.execute("DELETE FROM vocabulary")
+            self.logger.info("Cleared vocabulary table")
+            
+            # Clear user_notes table
+            self.session_manager.db.execute("DELETE FROM user_notes")
+            self.logger.info("Cleared user_notes table")
+            
+            # Clear grammar_topics table
+            self.session_manager.db.execute("DELETE FROM grammar_topics")
+            self.logger.info("Cleared grammar_topics table")
+            
+            # Clear media_recommendations table
+            self.session_manager.db.execute("DELETE FROM media_recommendations")
+            self.logger.info("Cleared media_recommendations table")
+            
+            # Clear learning_sessions table
+            self.session_manager.db.execute("DELETE FROM learning_sessions")
+            self.logger.info("Cleared learning_sessions table")
+            
+            # Clear conversation_messages table
+            self.session_manager.db.execute("DELETE FROM conversation_messages")
+            self.logger.info("Cleared conversation_messages table")
+            
+            # Publish events to refresh UI
+            self.event_bus.publish(EventTypes.VOCABULARY_UPDATED, {"reset": True})
+            self.event_bus.publish(EventTypes.NOTES_UPDATED, {"reset": True})
+            
+            # Show confirmation message
+            import tkinter.messagebox as messagebox
+            messagebox.showinfo("Data Reset", "All vocabulary, notes, and conversation data has been cleared.")
+            
+        except Exception as e:
+            self.logger.error(f"Error resetting data: {e}")
+            import tkinter.messagebox as messagebox
+            messagebox.showerror("Error", f"Failed to reset data: {str(e)}")
     
     def refresh_data(self):
         """Refresh dashboard data."""

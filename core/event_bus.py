@@ -183,6 +183,8 @@ class EventTypes:
     # Learning events
     VOCABULARY_LEARNED = "vocabulary_learned"
     VOCABULARY_REVIEWED = "vocabulary_reviewed"
+    VOCABULARY_UPDATED = "vocabulary_updated"
+    NOTES_UPDATED = "notes_updated"
     QUIZ_COMPLETED = "quiz_completed"
     PROGRESS_UPDATED = "progress_updated"
     LANGUAGE_CHANGED = "language_changed"

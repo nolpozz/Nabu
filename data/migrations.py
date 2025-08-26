@@ -45,11 +45,15 @@ class MigrationManager:
                     word TEXT NOT NULL,
                     translation TEXT,
                     language TEXT NOT NULL,
-                    difficulty_level INTEGER DEFAULT 1,
-                    mastery_level INTEGER DEFAULT 0,
+                    part_of_speech TEXT,
+                    difficulty_level REAL DEFAULT 1.0,
+                    mastery_level REAL DEFAULT 0.0,
+                    times_seen INTEGER DEFAULT 0,
+                    times_used INTEGER DEFAULT 0,
                     last_reviewed TIMESTAMP,
                     next_review TIMESTAMP,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES user_profile (id)
                 )
             """)
@@ -58,6 +62,7 @@ class MigrationManager:
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS learning_sessions (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    session_id TEXT UNIQUE,
                     user_id INTEGER,
                     session_type TEXT NOT NULL,
                     started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -138,7 +143,11 @@ class MigrationManager:
                     user_id INTEGER,
                     title TEXT NOT NULL,
                     content TEXT,
+                    category TEXT,
+                    language TEXT,
+                    priority INTEGER DEFAULT 1,
                     tags TEXT,
+                    archived BOOLEAN DEFAULT 0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES user_profile (id)
@@ -188,6 +197,53 @@ class MigrationManager:
                 
             try:
                 cursor.execute("ALTER TABLE learning_sessions ADD COLUMN archived BOOLEAN DEFAULT 0")
+            except:
+                pass  # Column already exists
+                
+            try:
+                cursor.execute("ALTER TABLE learning_sessions ADD COLUMN session_id TEXT")
+            except:
+                pass  # Column already exists
+                
+            # Add missing columns to user_notes table if they don't exist
+            try:
+                cursor.execute("ALTER TABLE user_notes ADD COLUMN category TEXT")
+            except:
+                pass  # Column already exists
+                
+            try:
+                cursor.execute("ALTER TABLE user_notes ADD COLUMN language TEXT")
+            except:
+                pass  # Column already exists
+                
+            try:
+                cursor.execute("ALTER TABLE user_notes ADD COLUMN priority INTEGER DEFAULT 1")
+            except:
+                pass  # Column already exists
+                
+            try:
+                cursor.execute("ALTER TABLE user_notes ADD COLUMN archived BOOLEAN DEFAULT 0")
+            except:
+                pass  # Column already exists
+                
+            # Add missing columns to vocabulary table if they don't exist
+            try:
+                cursor.execute("ALTER TABLE vocabulary ADD COLUMN part_of_speech TEXT")
+            except:
+                pass  # Column already exists
+                
+            try:
+                cursor.execute("ALTER TABLE vocabulary ADD COLUMN times_seen INTEGER DEFAULT 0")
+            except:
+                pass  # Column already exists
+                
+            try:
+                cursor.execute("ALTER TABLE vocabulary ADD COLUMN times_used INTEGER DEFAULT 0")
+            except:
+                pass  # Column already exists
+                
+            try:
+                cursor.execute("ALTER TABLE vocabulary ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
             except:
                 pass  # Column already exists
             

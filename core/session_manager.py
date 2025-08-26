@@ -72,7 +72,7 @@ class SessionManager(LoggerMixin):
         self.average_engagement = 0.0
         
         # Note generation
-        self.note_generator = NoteGenerator(db_manager)
+        self.note_generator = NoteGenerator(db_manager, event_bus)
         self.conversation_messages: List[Dict[str, Any]] = []
         
         self.logger.info("SessionManager initialized")
@@ -206,6 +206,47 @@ class SessionManager(LoggerMixin):
             if word not in self.current_session.new_vocab_learned:
                 self.current_session.new_vocab_learned.append(word)
                 self._update_session_in_db(self.current_session)
+                
+                # Also save to vocabulary database
+                try:
+                    # Check if word already exists in vocabulary table
+                    existing = self.db.execute_query(
+                        "SELECT word FROM vocabulary WHERE word = ? AND language = ?",
+                        (word, config.learning.target_language)
+                    )
+                    
+                    if not existing:
+                        # Insert new vocabulary word
+                        self.db.insert('vocabulary', {
+                            'word': word,
+                            'language': config.learning.target_language,
+                            'translation': '',  # Will be filled by AI later
+                            'part_of_speech': 'unknown',
+                            'difficulty_level': 1.0,
+                            'mastery_level': 0.0,
+                            'times_seen': 1,
+                            'times_used': 0,
+                            'last_reviewed': datetime.now().isoformat(),
+                            'created_at': datetime.now().isoformat(),
+                            'updated_at': datetime.now().isoformat()
+                        })
+                        self.logger.info(f"Added new vocabulary word: {word}")
+                    else:
+                        # Update existing word's times_seen
+                        self.db.execute(
+                            "UPDATE vocabulary SET times_seen = times_seen + 1, updated_at = ? WHERE word = ? AND language = ?",
+                            (datetime.now().isoformat(), word, config.learning.target_language)
+                        )
+                        self.logger.debug(f"Updated vocabulary word frequency: {word}")
+                    
+                    # Notify UI to refresh vocabulary tab
+                    self.event_bus.publish(EventTypes.VOCABULARY_UPDATED, {
+                        "word": word,
+                        "language": config.learning.target_language
+                    })
+                        
+                except Exception as e:
+                    self.logger.error(f"Error saving vocabulary word {word}: {e}")
     
     def add_correction(self, correction: Dict[str, Any]) -> None:
         """Add a correction to the session."""
@@ -316,15 +357,16 @@ class SessionManager(LoggerMixin):
         """Save session to database."""
         try:
             data = {
-                'id': session.session_id,
+                'session_id': session.session_id,
+                'session_type': session.mode,
                 'started_at': session.started_at,
                 'ended_at': session.ended_at,
                 'duration_seconds': session.duration_seconds,
                 'mode': session.mode,
                 'summary': session.notes,
-                'vocab_practiced': session.vocab_practiced,
-                'new_vocab_learned': session.new_vocab_learned,
-                'corrections_made': session.corrections_made,
+                'vocab_practiced': json.dumps(session.vocab_practiced),
+                'new_vocab_learned': json.dumps(session.new_vocab_learned),
+                'corrections_made': json.dumps(session.corrections_made),
                 'engagement_score': session.engagement_score,
                 'difficulty_level': session.difficulty_level,
                 'archived': False
@@ -342,14 +384,14 @@ class SessionManager(LoggerMixin):
                 'ended_at': session.ended_at,
                 'duration_seconds': session.duration_seconds,
                 'summary': session.notes,
-                'vocab_practiced': session.vocab_practiced,
-                'new_vocab_learned': session.new_vocab_learned,
-                'corrections_made': session.corrections_made,
+                'vocab_practiced': json.dumps(session.vocab_practiced),
+                'new_vocab_learned': json.dumps(session.new_vocab_learned),
+                'corrections_made': json.dumps(session.corrections_made),
                 'engagement_score': session.engagement_score,
                 'difficulty_level': session.difficulty_level
             }
             
-            self.db.update('learning_sessions', data, 'id = ?', (session.session_id,))
+            self.db.update('learning_sessions', data, 'session_id = ?', (session.session_id,))
             
         except Exception as e:
             self.logger.error(f"Failed to update session in database: {e}", exc_info=True)
@@ -358,7 +400,7 @@ class SessionManager(LoggerMixin):
         """Load session from database."""
         try:
             result = self.db.fetch_dict(
-                'SELECT * FROM learning_sessions WHERE id = ?',
+                'SELECT * FROM learning_sessions WHERE session_id = ?',
                 (session_id,)
             )
             
@@ -390,7 +432,7 @@ class SessionManager(LoggerMixin):
                     ended_at = datetime.fromisoformat(ended_at)
                 
                 return SessionState(
-                    session_id=result['id'],
+                    session_id=result['session_id'],
                     started_at=started_at,
                     ended_at=ended_at,
                     duration_seconds=result['duration_seconds'] or 0,
