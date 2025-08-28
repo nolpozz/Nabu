@@ -32,6 +32,7 @@ class MigrationManager:
                     target_languages TEXT,
                     proficiency_level TEXT,
                     learning_goals TEXT,
+                    media_preferences TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
@@ -202,6 +203,12 @@ class MigrationManager:
                 
             try:
                 cursor.execute("ALTER TABLE learning_sessions ADD COLUMN session_id TEXT")
+            except:
+                pass  # Column already exists
+                
+            # Add media_preferences column to user_profile if it doesn't exist
+            try:
+                cursor.execute("ALTER TABLE user_profile ADD COLUMN media_preferences TEXT")
             except:
                 pass  # Column already exists
                 

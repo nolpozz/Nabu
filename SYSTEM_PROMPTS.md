@@ -40,6 +40,12 @@ VOCABULARY INTEGRATION:
 - Use vocabulary appropriate to the user's current level
 - When introducing new words, provide brief translations in {native_language} if helpful
 
+MEDIA PREFERENCES:
+- If the user asks for media recommendations but has no preferences saved, ask about their interests
+- Ask about movies, TV shows, music genres, podcasts, or books they enjoy
+- Use their responses to provide personalized recommendations
+- Encourage them to share what they like to watch, listen to, or read
+
 Remember: You are a supportive, patient tutor focused on building confidence and practical language skills.
 ```
 
@@ -66,8 +72,15 @@ This allows the AI to:
 **Tool Integration:**
 The AI model now has access to dynamic tools that provide additional context based on user input:
 - **Vocabulary Lookup Tool**: Searches user's vocabulary database for specific words
-- **Media Recommendation Tool**: Suggests learning media based on user's level
+- **Media Recommendation Tool**: Suggests learning media based on user's level and preferences
 - **Grammar Help Tool**: Provides targeted grammar assistance
+- **Media Preferences Tool**: Automatically detects and saves user media preferences
+
+**Media Preferences System:**
+- **Proactive Preference Gathering**: When no media preferences exist, the AI is prompted to ask about user interests
+- **Automatic Detection**: Detects when users share their media preferences (movies, TV shows, music, etc.)
+- **Preference Storage**: Saves preferences to the database for personalized recommendations
+- **Multilingual Support**: Detects preferences in English, Spanish, French, and German
 
 Tools are automatically triggered based on keyword detection in user input, providing relevant information without requiring complex orchestration.
 

@@ -399,6 +399,12 @@ VOCABULARY INTEGRATION:
 - Use vocabulary appropriate to the user's current level
 - When introducing new words, provide brief translations in {self._get_language_name(native_lang)} if helpful
 
+MEDIA PREFERENCES:
+- If the user asks for media recommendations but has no preferences saved, ask about their interests
+- Ask about movies, TV shows, music genres, podcasts, or books they enjoy
+- Use their responses to provide personalized recommendations
+- Encourage them to share what they like to watch, listen to, or read
+
 Remember: You are a supportive, patient tutor focused on building confidence and practical language skills."""
             else:
                 system_prompt = "You are a helpful AI assistant. Keep responses short and conversational."
@@ -738,6 +744,11 @@ Remember: You are a supportive, patient tutor focused on building confidence and
                 grammar_data = self._grammar_help_tool(user_text)
                 if grammar_data:
                     tool_context += f"\nGRAMMAR HELP: {grammar_data}\n"
+            
+            # Check if user is sharing media preferences
+            if self._is_sharing_media_preferences(user_text):
+                self._save_media_preferences(user_text)
+                tool_context += f"\nMEDIA PREFERENCES SAVED: User preferences have been recorded for future recommendations.\n"
                     
         except Exception as e:
             self.logger.error(f"Error getting tool context: {e}")
@@ -779,6 +790,82 @@ Remember: You are a supportive, patient tutor focused on building confidence and
         ]
         user_lower = user_text.lower()
         return any(keyword in user_lower for keyword in grammar_keywords)
+    
+    def _is_sharing_media_preferences(self, user_text: str) -> bool:
+        """Check if user is sharing their media preferences."""
+        preference_keywords = [
+            'like', 'love', 'enjoy', 'favorite', 'prefer', 'watch', 'listen', 'read',
+            'movie', 'film', 'show', 'series', 'tv', 'television', 'music', 'song', 'band',
+            'podcast', 'book', 'genre', 'comedy', 'drama', 'action', 'romance', 'thriller',
+            'documentary', 'sci-fi', 'fantasy', 'horror', 'rock', 'pop', 'jazz', 'classical',
+            'me gusta', 'me encanta', 'favorito', 'prefiero', 'mirar', 'escuchar',  # Spanish
+            'j\'aime', 'j\'adore', 'favori', 'préfère', 'regarder', 'écouter',      # French
+            'mag', 'liebe', 'favorit', 'bevorzuge', 'schauen', 'hören'              # German
+        ]
+        user_lower = user_text.lower()
+        return any(keyword in user_lower for keyword in preference_keywords)
+    
+    def _save_media_preferences(self, user_text: str):
+        """Save user's media preferences to the database."""
+        try:
+            # Extract media preferences from user text
+            preferences = self._extract_media_preferences(user_text)
+            
+            if preferences:
+                # Update user profile with media preferences
+                update_query = """
+                    UPDATE user_profile 
+                    SET media_preferences = ? 
+                    WHERE id = (SELECT id FROM user_profile LIMIT 1)
+                """
+                self.db_manager.execute_query(update_query, (preferences,))
+                self.logger.info(f"Saved media preferences: {preferences}")
+                
+        except Exception as e:
+            self.logger.error(f"Error saving media preferences: {e}")
+    
+    def _extract_media_preferences(self, user_text: str) -> str:
+        """Extract media preferences from user text."""
+        try:
+            import re
+            
+            # Define media categories and their keywords
+            media_categories = {
+                'movies': ['movie', 'film', 'cinema', 'película', 'film'],
+                'tv_shows': ['show', 'series', 'tv', 'television', 'serie', 'télévision'],
+                'music': ['music', 'song', 'band', 'artist', 'música', 'canción', 'musique', 'chanson'],
+                'podcasts': ['podcast', 'audio', 'podcast'],
+                'books': ['book', 'novel', 'reading', 'libro', 'livre', 'buch'],
+                'genres': ['comedy', 'drama', 'action', 'romance', 'thriller', 'documentary', 
+                          'sci-fi', 'fantasy', 'horror', 'rock', 'pop', 'jazz', 'classical',
+                          'comedia', 'drama', 'acción', 'romance', 'thriller', 'documental',
+                          'comédie', 'drame', 'action', 'romance', 'thriller', 'documentaire']
+            }
+            
+            preferences = []
+            user_lower = user_text.lower()
+            
+            # Extract mentioned media types and genres
+            for category, keywords in media_categories.items():
+                for keyword in keywords:
+                    if keyword in user_lower:
+                        # Get the context around the keyword
+                        pattern = rf'\b\w*\s*\w*\s*{re.escape(keyword)}\s*\w*\s*\w*\b'
+                        matches = re.findall(pattern, user_lower)
+                        if matches:
+                            preferences.extend(matches)
+            
+            # Clean and format preferences
+            if preferences:
+                # Remove duplicates and clean up
+                unique_prefs = list(set([pref.strip() for pref in preferences if len(pref.strip()) > 2]))
+                return ', '.join(unique_prefs[:10])  # Limit to 10 preferences
+            
+            return ""
+            
+        except Exception as e:
+            self.logger.error(f"Error extracting media preferences: {e}")
+            return ""
     
     def _vocabulary_lookup_tool(self, user_text: str) -> str:
         """Look up specific vocabulary word from user's database."""
@@ -825,6 +912,18 @@ Remember: You are a supportive, patient tutor focused on building confidence and
     def _media_recommendation_tool(self, user_text: str, user_context: Dict[str, Any]) -> str:
         """Get media recommendations based on user's level and interests."""
         try:
+            # Check if we have user media preferences
+            preferences_query = """
+                SELECT media_preferences FROM user_profile 
+                WHERE media_preferences IS NOT NULL AND media_preferences != ''
+                LIMIT 1
+            """
+            preferences_result = self.db_manager.execute_query(preferences_query)
+            
+            # If no preferences exist, return guidance for the AI to ask questions
+            if not preferences_result or not preferences_result[0][0]:
+                return "MEDIA PREFERENCES NEEDED: Ask the user about their media preferences (movies, TV shows, music genres, podcasts, books) to provide personalized recommendations."
+            
             # Determine user's proficiency level for recommendations
             proficiency = user_context.get('proficiency_level', 'Beginner')
             level_mapping = {
